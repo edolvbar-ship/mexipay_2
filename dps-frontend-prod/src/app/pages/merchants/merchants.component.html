@@ -1,0 +1,20 @@
+<section-title
+    title="Comercios"
+    textBtn="Nuevo Comercio"
+    subHead="Relación de comercios por banco adquirente"
+    [linkText]="linkText"
+    [canCreate]="canCreate">
+</section-title>
+<card-container>
+    <table-layout 
+    [filter]="true"
+    [dataTable]="merchants"
+    [showActions]="true" 
+    [actions]="actions" 
+    />
+</card-container>
+<modal-confirm
+    (accept)="handleAccept()" 
+    (reject)="handleReject()">
+</modal-confirm>
+

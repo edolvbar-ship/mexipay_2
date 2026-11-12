@@ -1,0 +1,20 @@
+<section-title
+    title="Administración de Usuarios Terminales"
+    textBtn="Nuevo Usuario TDM"
+    [linkText]="linkText"
+    [canCreate]="canCreate">
+</section-title>
+<card-container>
+    <table-layout 
+        [dataTable]="usersTDM"
+        [actions]="actions" 
+        [showActions]="true" 
+        [actionsColumnIndex]="2"
+        [filter]="true"
+        >    
+    </table-layout>
+</card-container>
+<modal-confirm
+    (accept)="handleReject()" 
+    (reject)="handleAccept()">
+</modal-confirm>

@@ -1,0 +1,257 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ isEdit ? 'Edit MCC Operation' : 'Create New MCC Operation' }}</h2>
+        <button class="btn btn-secondary" (click)="onCancel()">
+          <i class="fas fa-arrow-left"></i> Back to Operations
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <form [formGroup]="operationForm" (ngSubmit)="onSubmit()">
+            <!-- MCC Range Section -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="card-title">MCC Range Configuration</h5>
+                <hr>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="mcc_range_start" class="form-label">MCC Range Start *</label>
+                  <select 
+                    id="mcc_range_start" 
+                    class="form-control" 
+                    formControlName="mcc_range_start"
+                    [class.is-invalid]="isFieldInvalid('mcc_range_start')">
+                    <option value="">Select MCC Range</option>
+                    <option *ngFor="let option of mccRangeOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('mcc_range_start')">
+                    {{ getErrorMessage('mcc_range_start') }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="mcc_range_end" class="form-label">MCC Range End</label>
+                  <input 
+                    type="text" 
+                    id="mcc_range_end" 
+                    class="form-control" 
+                    formControlName="mcc_range_end"
+                    placeholder="Leave empty for single MCC"
+                    maxlength="3">
+                  <small class="form-text text-muted">
+                    Leave empty for single MCC, or specify end of range (e.g., 399)
+                  </small>
+                </div>
+              </div>
+
+              <div class="col-12" *ngIf="operationForm.get('mcc_range_start')?.value">
+                <div class="alert alert-info">
+                  <strong>Selected Range:</strong> {{ getMccRangeDisplay() }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Operation Details Section -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="card-title">Operation Details</h5>
+                <hr>
+              </div>
+
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="name" class="form-label">Operation Name *</label>
+                  <input 
+                    type="text" 
+                    id="name" 
+                    class="form-control" 
+                    formControlName="name"
+                    placeholder="e.g., Venta con Propina"
+                    [class.is-invalid]="isFieldInvalid('name')">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+                    {{ getErrorMessage('name') }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="operation_code" class="form-label">Operation Code *</label>
+                  <input 
+                    type="text" 
+                    id="operation_code" 
+                    class="form-control" 
+                    formControlName="operation_code"
+                    placeholder="e.g., SALE_WITH_TIP"
+                    [class.is-invalid]="isFieldInvalid('operation_code')">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('operation_code')">
+                    {{ getErrorMessage('operation_code') }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="form-group">
+                  <label for="description" class="form-label">Description</label>
+                  <textarea 
+                    id="description" 
+                    class="form-control" 
+                    formControlName="description"
+                    rows="3"
+                    placeholder="Describe what this operation does"
+                    [class.is-invalid]="isFieldInvalid('description')">
+                  </textarea>
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
+                    {{ getErrorMessage('description') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ISO 8583 Configuration Section -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="card-title">ISO 8583 Configuration</h5>
+                <hr>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="msg_type" class="form-label">Message Type</label>
+                  <select 
+                    id="msg_type" 
+                    class="form-control" 
+                    formControlName="msg_type">
+                    <option *ngFor="let option of msgTypeOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="processing_code" class="form-label">Processing Code</label>
+                  <input 
+                    type="text" 
+                    id="processing_code" 
+                    class="form-control" 
+                    formControlName="processing_code"
+                    placeholder="e.g., 000000"
+                    maxlength="6">
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="display_order" class="form-label">Display Order</label>
+                  <input 
+                    type="number" 
+                    id="display_order" 
+                    class="form-control" 
+                    formControlName="display_order"
+                    min="0"
+                    max="999">
+                  <small class="form-text text-muted">
+                    Order in which this operation appears in the list
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <!-- UI Configuration Section -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="card-title">UI Configuration</h5>
+                <hr>
+              </div>
+
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label for="requires_amount" class="form-label">Requires Amount</label>
+                  <select 
+                    id="requires_amount" 
+                    class="form-control" 
+                    formControlName="requires_amount">
+                    <option [ngValue]="1">Yes</option>
+                    <option [ngValue]="0">No</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label for="requires_tip" class="form-label">Requires Tip</label>
+                  <select 
+                    id="requires_tip" 
+                    class="form-control" 
+                    formControlName="requires_tip">
+                    <option *ngFor="let option of tipOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label for="active" class="form-label">Status</label>
+                  <select 
+                    id="active" 
+                    class="form-control" 
+                    formControlName="active">
+                    <option [ngValue]="1">Active</option>
+                    <option [ngValue]="0">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label for="icon_name" class="form-label">Icon Name</label>
+                  <select 
+                    id="icon_name" 
+                    class="form-control" 
+                    formControlName="icon_name">
+                    <option value="">No Icon</option>
+                    <option *ngFor="let icon of iconOptions" [value]="icon">
+                      {{ icon }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="row">
+              <div class="col-12">
+                <div class="d-flex justify-content-end gap-2">
+                  <button type="button" class="btn btn-secondary" (click)="onCancel()">
+                    Cancel
+                  </button>
+                  <button type="submit" class="btn btn-primary" [disabled]="loading || operationForm.invalid">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+                    {{ isEdit ? 'Update Operation' : 'Create Operation' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

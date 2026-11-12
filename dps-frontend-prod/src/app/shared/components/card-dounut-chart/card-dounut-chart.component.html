@@ -1,0 +1,38 @@
+<card-container>
+    <div class="grid grid-rows-2 grid-flow-col h-36">
+        <div class="min-h-0 p-0 m-0 flex flex-col" id="header">
+            <text-title text={{title}} size="regular" class="mb-0"></text-title>
+            <text-type text={{subTitle}} size="small" variant="disable" class="-mb-8"></text-type>
+        </div>
+        <div class="flex items-center content-start w-full" id="body">
+            <div class="flex items-center w-1/2">
+                <div class="mr-4">
+                    <span *ngFor="let item of infoChart" class="flex items-center gap-2">
+                        <i ngClass="pi pi-circle-fill text-sm" [ngStyle]="{'color': item.color}"></i>
+                        <text-type [text]="item.name" size="small" class="mb-0"></text-type>
+                    </span>
+                </div>
+            </div>
+          <div [ngSwitch]="total" class="flex flex-col items-center w-1/2 h-full content-start">
+            <div>
+              <div *ngSwitchCase="0" class="chart-container flex flex-col items-center w-full h-full">
+                <donut-chart class="size-full h-full" [dataValues]="[100]" [colors]="['#9F9F9F']"></donut-chart>
+                <div class="text-3xl font-bold overlay-text">
+                  0
+                </div>
+              </div>
+            </div>
+            <div>
+              <div *ngSwitchDefault class="chart-container flex flex-col items-center w-full h-full">
+                <div class="text-3xl font-bold overlay-text">
+                  {{ total }}
+                </div>
+                <donut-chart class="size-full h-full" [dataValues]="dataChart" [colors]="donutColors"
+                             [labels]="labelChart"></donut-chart>
+              </div>
+            </div>
+          </div>
+
+        </div>
+    </div>
+</card-container>

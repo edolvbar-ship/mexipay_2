@@ -1,0 +1,408 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../../../sequelize/init');
+const { default: axios } = require('axios');
+const crypto = require('crypto');
+const { generateTKA } = require('../../../lib/tka');
+const SeliaWebService = require('../../../services/seliaWebService');
+const helpers = require("../../../lib/helpers");
+
+// Initialize Selia service
+const seliaService = new SeliaWebService({
+    host: process.env.SELIA_HOST,
+    port: process.env.SELIA_PORT,
+    aesKey: process.env.SELIA_AES_KEY,
+    companyId: process.env.SELIA_COMPANY_ECOMMERCE_ID,
+    username: process.env.SELIA_USERNAME,
+    password: process.env.SELIA_PASSWORD,
+    debug: process.env.SELIA_DEBUG === 'true',
+    db: db
+});
+router.get('/payment-link', async (req, res) => {
+    console.log('=== PAYMENT LINK VALIDATION ===');
+    console.log('Token received:', req.query.token);
+
+    if(!req.query.token) {
+        return res.status(400).json({
+            statusCode: 1,
+            description: 'Token requerido'
+        });
+    }
+
+    try {
+        const reg = await db.linksPago.findOne({
+            attributes: { include: ['concepto', 'created_at', 'id', 'id_merchant', 'id_user', 'monto', 'status'], exclude: ['deleted_at'] },
+            where: { token: req.query.token },
+            include: [
+                {
+                    model: db.merchant,
+                    as: 'merchant',
+                    attributes: { include: ['name_merchant', 'razon_social', 'id_medio_link'] },
+                    include: ['iso_client_dt', 'profile_trans']
+                }
+            ]
+        });
+
+        if(!reg) {
+            console.log('Link not found for token:', req.query.token);
+            return res.json({ // Use res.json() instead of res.status(200).json()
+                statusCode: 1,
+                description: 'Link inválido'
+            });
+        }
+
+        if (reg.expire_date && new Date(reg.expire_date) < new Date()) {
+            console.log('Link expired for token:', req.query.token);
+            return res.json({
+                statusCode: 3,
+                description: 'Link caducado'
+            });
+        }
+
+        if (reg.status > 1) {
+            console.log('Link already processed for token:', req.query.token);
+            return res.json({
+                statusCode: 4,
+                description: 'Link ya procesado'
+            });
+        }
+
+        const bitmap = await helpers.decript_bitmap_profile(reg.merchant.profile_trans.hex_value);
+        const hasPartial = bitmap.indicadores.includes(1);
+
+        let allowedPlans = JSON.parse(reg.merchant.MSI) || [];
+        allowedPlans = allowedPlans.filter(obj => parseFloat(obj.min_mount) <= parseFloat(reg.monto) );
+        allowedPlans = allowedPlans.map(obj => helpersText.padLeft(obj.type,2,'0'));
+
+        console.log('Link validated successfully for token:', req.query.token);
+        return res.json({
+            statusCode: 0,
+            data: {...reg.get({plain: true}), hasPartial, allowedPlans}
+        });
+
+    } catch (error) {
+        console.error('Error validating payment link:', error);
+        return res.status(500).json({
+            statusCode: 99,
+            description: 'Error interno del servidor'
+        });
+    }
+});
+
+
+// ==================== PAYOUT PROCESSING ====================
+router.post('/payment/payout', async (req, res) => {
+    let form_data = null;
+
+    try {
+        form_data = Buffer.from(req.body.data, 'base64').toString();
+        form_data = (typeof form_data == 'string') ? JSON.parse(form_data) : form_data;
+    } catch (error) {
+        return res.status(400).json({
+            error: true,
+            error_code: '00-1',
+            description: 'Datos mal formados, favor de recargar la pagina',
+            data: { error, data: req.body.data },
+            authorization: null
+        });
+    }
+
+    const ts = `${Date.now()}`;
+    let merchant = await db.merchant.findOne({ where: { id_merchant: form_data.dataPayment.id_merchant } });
+    let tka = await generateTKA(merchant.token_activation, ts, merchant.afiliation_number);
+
+    const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'commerce-id': merchant.afiliation_number,
+        'commerce-name': merchant.name_merchant,
+        'X-Time': ts,
+        'X-Auth': tka
+    };
+
+    let chargePlan;
+    if(form_data.dataPayment.chargePlan){
+        chargePlan = {
+            first_payment: "00",
+            months: form_data.dataPayment.chargePlan,
+            type: "03"
+        };
+    }
+
+    const tarjeta = form_data.tarjeta.split('-').join('');
+    const baseUrl = process.env.FRONT_URL || `${req.protocol}://${req.get('host')}`;
+
+    const body = {
+        "isoType": "AGRS",
+        "amount": form_data.dataPayment.monto,
+        'concepto': form_data.dataPayment.concepto || '',
+        'url_comercio': form_data.dataPayment.url_comercio || '',
+        'currency': "MXN",
+        "reference": ('' + Date.now()).substring(0, 10),
+        "cardInformation": {
+            "holder_name": form_data.nombre,
+            "card_number": tarjeta,
+            "last4": tarjeta.substr(tarjeta.length - 4),
+            "bin": tarjeta.substr(0, 6),
+            "expiration_year": form_data.venci.split('/')[1],
+            "expiration_month": form_data.venci.split('/')[0],
+            "cvv": form_data.cvv
+        },
+        chargePlan,
+        "entry_mode": "manual",
+        "authentication": "unknown",
+        "draftCapture": "1",
+        "tpv": false,
+        "periodic": false,
+        'billingAddress': {
+            'street': form_data.calle,
+            'street2': '',
+            'state': form_data.ciudad,
+            'country': form_data.pais,
+            'zip': form_data.cp,
+        },
+        'email': form_data.email,
+        "link_pago": (form_data.linkPago == 2),
+        url: form_data.dataPayment.token ? `${baseUrl}/payment?token=${form_data.dataPayment.token}&` : `${baseUrl}/api/pay?`,
+    };
+
+    try {
+        const response = await axios.post(`${req.protocol}://${req.get('host')}/gateway/v1/ecommerce/charge`, body, { headers });
+
+        if (response.data.url)
+            return res.json({ url: response.data.url });
+
+        if (response.data.resp_code != '00') {
+            return res.json(response.data);
+        }
+
+        let inf = form_data.dataPayment.info_adicional;
+        inf = inf ? JSON.parse(inf) : {};
+        inf.tx = {
+            authorization: response.data.authorization,
+            referencia: response.data.id,
+            trace_number: response.data.trace_id
+        };
+
+        if (body.link_pago) {
+            await db.linksPago.update({
+                status: response.data.resp_code == '00' ? 2 : 3,
+                info_adicional: JSON.stringify(inf)
+            }, { where: { id: form_data.dataPayment.id } });
+        }
+
+        return res.json(response.data);
+    } catch (error) {
+        if(error.response?.status == 504){
+            return res.json({
+                error: true,
+                resp_code: error.response.data.resp_code | error.response.data.error_code,
+                description: error.response.data.description,
+                data: error.response.data.response,
+                authorization: null
+            });
+        }
+
+        return res.json({
+            error: true,
+            resp_code: '05',
+            description: 'Rechazada por 3DS',
+            data: error,
+            authorization: null
+        });
+    }
+});
+
+// ==================== PAYMENT2 ROUTE ====================
+router.post('/payment2', async (req, res) => {
+    if(req.body.reference != undefined && req.body.reference != ''){
+        const response = await db.tresds.findOne({ where: { referencia_tx: req.body.reference }, raw: true });
+        const comercio = await db.merchant.findOne({
+            include: [
+                {
+                    model: db.isoClient,
+                    attributes: ['name'],
+                    as: 'iso_client_dt'
+                }
+            ],
+            where: {
+                name_merchant: response['commerce-name'],
+                afiliation_number: response['commerce-id']
+            },
+            raw: true
+        });
+
+        return res.json({ response: Object.assign(response, { cliente:comercio['iso_client_dt.name'] }) });
+    }
+
+    const response = await db.merchant.findOne({
+        where: { name_merchant: req.body.name_merchant },
+        include: [
+            {
+                model: db.isoClient,
+                attributes: ['name'],
+                as: 'iso_client_dt'
+            }
+        ],
+        raw: true
+    });
+
+    return res.json({ response });
+});
+
+// ==================== SEND DATA TX ====================
+router.post('/sendDataTx', (req, res) => {
+    res.json(req.body);
+});
+
+// ==================== SELIA PAYMENT PROCESSING ====================
+router.post('/payment/selia', async (req, res) => {
+    let form_data = null;
+
+    try {
+        form_data = Buffer.from(req.body.data, 'base64').toString();
+        form_data = (typeof form_data == 'string') ? JSON.parse(form_data) : form_data;
+    } catch (error) {
+        return res.status(400).json({
+            error: true,
+            error_code: '00-1',
+            description: 'Datos mal formados, favor de recargar la pagina',
+            data: { error, data: req.body.data },
+            authorization: null
+        });
+    }
+
+    try {
+        const { dataPayment, tarjeta, nombre, venci, cvv, email, calle, ciudad, pais, cp } = form_data;
+
+        if (dataPayment.token) {
+            const link = await db.linksPago.findOne({
+                where: { token: dataPayment.token, status: 1 }
+            });
+
+            if (!link) {
+                return res.status(404).json({
+                    error: true,
+                    error_code: '04',
+                    description: 'Link no encontrado o ya procesado'
+                });
+            }
+
+            if (link.expire_date && new Date(link.expire_date) < new Date()) {
+                return res.status(400).json({
+                    error: true,
+                    error_code: '03',
+                    description: 'El link de pago ha expirado'
+                });
+            }
+        }
+
+        const cleanCard = tarjeta.split('-').join('');
+        const paymentData = {
+            cardNumber: cleanCard,
+            amount: Math.round(dataPayment.monto * 100).toString(),
+            cvv: cvv,
+            expiration: `${venci.split('/')[0]}${venci.split('/')[1].slice(-2)}`,
+            transactionType: '501',
+            entryMode: '1'
+        };
+
+        const seliaResult = await seliaService.processPayment(paymentData);
+
+        if (dataPayment.token) {
+            const inf = dataPayment.info_adicional ? JSON.parse(dataPayment.info_adicional) : {};
+            inf.tx = {
+                authorization: seliaResult.authorizationCode,
+                referencia: seliaResult.transactionId,
+                trace_number: seliaResult.transactionId,
+                processor: 'selia'
+            };
+
+            await db.linksPago.update(
+                {
+                    status: seliaResult.success ? 2 : 3,
+                    selia_transaction_id: seliaResult.transactionId,
+                    selia_authorization_code: seliaResult.authorizationCode,
+                    selia_response_code: parseInt(seliaResult.responseCode),
+                    selia_response_data: JSON.stringify(seliaResult),
+                    processor_type: 'selia',
+                    info_adicional: JSON.stringify(inf),
+                    updated_at: new Date()
+                },
+                { where: { token: dataPayment.token } }
+            );
+        }
+
+        if (seliaResult.success) {
+            return res.json({
+                error: false,
+                resp_code: '00',
+                description: seliaResult.responseMessage,
+                authorization: seliaResult.authorizationCode,
+                trace_id: seliaResult.transactionId,
+                id: seliaResult.transactionId,
+                data: {
+                    processor: 'selia',
+                    raw_response: seliaResult.rawResponse,
+                    selia_response_code: seliaResult.responseCode
+                }
+            });
+        } else {
+            return res.json({
+                error: true,
+                resp_code: seliaResult.responseCode || '05',
+                description: seliaResult.responseMessage,
+                authorization: null,
+                data: {
+                    processor: 'selia',
+                    raw_response: seliaResult.rawResponse,
+                    selia_response_code: seliaResult.responseCode
+                }
+            });
+        }
+    } catch (error) {
+        return res.status(500).json({
+            error: true,
+            resp_code: '06',
+            description: `Error procesando pago: ${error.message}`,
+            authorization: null
+        });
+    }
+});
+
+// ==================== PUBLIC DATA ====================
+router.get('/iso3166', async (_req, res) => {
+    const iso = await db.ciso3166.findAll({
+        attributes: ['country', 'alpha2', 'alpha3'],
+        raw: true
+    });
+    return res.status(200).json({ iso });
+});
+
+// ==================== HELPER FUNCTIONS ====================
+function generateSHA256(chain) {
+    const hash = crypto.createHash('sha256');
+    hash.update(chain);
+    return hash.digest('hex');
+}
+
+function formatMount(numberStr) {
+    const num = [parseInt(numberStr.substr(0, 10)), numberStr.substr(-2)];
+    return num[0] + '.' + num[1];
+}
+
+function hex2a(hexx) {
+    var hex = hexx.toString();
+    var str = '';
+    for (var i = 0; i < hex.length; i += 2)
+        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    return str;
+}
+
+module.exports = router;
+console.log('🔄 PAYMENT LINK ROUTE FILE LOADED - DEBUG VERSION');
+router.get('/debug-payment-link', async (req, res) => {
+    console.log('✅ DEBUG PAYMENT LINK ROUTE HIT');
+    res.json({ status: 'debug_working', message: 'Debug route is working', timestamp: new Date() });
+});
+

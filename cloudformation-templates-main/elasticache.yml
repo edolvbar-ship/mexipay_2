@@ -1,0 +1,332 @@
+AutoMinorVersionUpgrade
+	
+true
+	
+-
+BackendSecurityGroupId
+	
+sg-0dea06206ea59fbd9
+	
+-
+Environment
+	
+qa
+	
+-
+FrontendSecurityGroupId
+	
+sg-0720ca4e836eab9dc
+	
+-
+NotificationEmail
+	
+soporte@muukpay.com.mx
+	
+-
+NumCacheNodes
+	
+2
+	
+-
+PrivateSubnet1Id
+	
+subnet-0b58d3bd4f4d4281c
+	
+-
+PrivateSubnet2Id
+	
+subnet-0a357f98954820d6f
+	
+-
+RedisEngineVersion
+	
+7.0
+	
+-
+RedisNodeType
+	
+cache.t3.medium
+	
+-
+VpcId
+	
+vpc-082966676373277b9
+	
+-
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'PCI DSS ElastiCache Redis Cluster for Payment Gateway Caching'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    Description: Environment tag (e.g., prod, qa)
+  
+  VpcId:
+    Type: String
+    Description: VPC ID from pci-app-infrastructure stack
+  
+  PrivateSubnet1Id:
+    Type: String
+    Description: First private subnet ID
+  
+  PrivateSubnet2Id:
+    Type: String
+    Description: Second private subnet ID
+  
+  BackendSecurityGroupId:
+    Type: String
+    Description: Backend Elastic Beanstalk security group ID (optional, for ingress rules)
+  
+  FrontendSecurityGroupId:
+    Type: String
+    Description: Frontend Elastic Beanstalk security group ID (optional, for ingress rules)
+  
+  RedisNodeType:
+    Type: String
+    Default: cache.t3.medium
+    Description: Redis node instance type
+  
+  RedisEngineVersion:
+    Type: String
+    Default: 7.0
+    Description: Redis engine version
+  
+  NumCacheNodes:
+    Type: Number
+    Default: 2
+    Description: Number of cache nodes
+  
+  AutoMinorVersionUpgrade:
+    Type: String
+    Default: true
+    Description: Enable automatic minor version upgrades
+  
+  NotificationEmail:
+    Type: String
+    Default: andres.gtz@programmer.city
+    Description: Email for CloudWatch alarm notifications
+
+Conditions:
+  HasBackendSG: !Not [!Equals [!Ref BackendSecurityGroupId, ""]]
+  HasFrontendSG: !Not [!Equals [!Ref FrontendSecurityGroupId, ""]]
+  HasBothSGs: !And [!Condition HasBackendSG, !Condition HasFrontendSG]
+  HasNotificationEmail: !Not [!Equals [!Ref NotificationEmail, ""]]
+
+Resources:
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: PCI Redis Security Group - Allow from EB instances
+      VpcId: !Ref VpcId
+      SecurityGroupIngress: !If
+        - HasBothSGs
+        - - IpProtocol: tcp
+            FromPort: 6379
+            ToPort: 6379
+            SourceSecurityGroupId: !Ref BackendSecurityGroupId
+            Description: Allow from backend instances
+          - IpProtocol: tcp
+            FromPort: 6379
+            ToPort: 6379
+            SourceSecurityGroupId: !Ref FrontendSecurityGroupId
+            Description: Allow from frontend instances
+        - !If
+          - HasBackendSG
+          - - IpProtocol: tcp
+              FromPort: 6379
+              ToPort: 6379
+              SourceSecurityGroupId: !Ref BackendSecurityGroupId
+              Description: Allow from backend instances
+          - !If
+            - HasFrontendSG
+            - - IpProtocol: tcp
+                FromPort: 6379
+                ToPort: 6379
+                SourceSecurityGroupId: !Ref FrontendSecurityGroupId
+                Description: Allow from frontend instances
+            - !Ref AWS::NoValue
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-redis-sg'
+        - Key: PCI-DSS
+          Value: 'true'
+        - Key: PCI-Scope
+          Value: 'CDE'
+
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Redis subnet group for PCI payment gateway
+      SubnetIds:
+        - !Ref PrivateSubnet1Id
+        - !Ref PrivateSubnet2Id
+      Tags:
+        - Key: PCI-Scope
+          Value: 'CDE'
+
+  RedisParameterGroup:
+    Type: AWS::ElastiCache::ParameterGroup
+    Properties:
+      Description: PCI-compliant Redis parameter group
+      CacheParameterGroupFamily: redis7
+      Tags:
+        - Key: PCI-DSS
+          Value: 'Req 3.1'
+
+  RedisCluster:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupDescription: PCI Payment Gateway Redis Cluster
+      CacheNodeType: !Ref RedisNodeType
+      Engine: redis
+      EngineVersion: !Ref RedisEngineVersion
+      NumCacheClusters: !Ref NumCacheNodes
+      AutomaticFailoverEnabled: true
+      MultiAZEnabled: true
+      AtRestEncryptionEnabled: true
+      TransitEncryptionEnabled: true
+      AuthToken: !Ref RedisAuthToken
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+      SecurityGroupIds:
+        - !Ref RedisSecurityGroup
+      ReplicationGroupId: !Sub '${Environment}-pci-redis'
+      AutoMinorVersionUpgrade: !Ref AutoMinorVersionUpgrade
+      SnapshotWindow: 02:00-03:00
+      SnapshotRetentionLimit: 7
+      NotificationTopicArn: !Ref RedisNotificationTopic
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-pci-redis'
+        - Key: PCI-DSS
+          Value: 'Req 3.5'
+        - Key: PCI-Scope
+          Value: 'CDE'
+
+  RedisAuthToken:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Redis AUTH token for PCI compliance
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "default"}'
+        GenerateStringKey: "password"
+        PasswordLength: 32
+        ExcludeCharacters: '"@/\\'
+        RequireEachIncludedType: true
+      Tags:
+        - Key: PCI-DSS
+          Value: 'Req 8.2'
+
+  RedisNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${Environment}-redis-notifications'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  RedisNotificationSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasNotificationEmail
+    Properties:
+      Protocol: email
+      TopicArn: !Ref RedisNotificationTopic
+      Endpoint: !Ref NotificationEmail
+
+  RedisCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-redis-cpu-alarm'
+      AlarmDescription: Alert when Redis CPU > 80%
+      Namespace: AWS/ElastiCache
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: ReplicationGroupId
+          Value: !Ref RedisCluster
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref RedisNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  RedisMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-redis-memory-alarm'
+      AlarmDescription: Alert when Redis memory > 80%
+      Namespace: AWS/ElastiCache
+      MetricName: FreeableMemory
+      Dimensions:
+        - Name: ReplicationGroupId
+          Value: !Ref RedisCluster
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 100000000
+      ComparisonOperator: LessThanThreshold
+      AlarmActions:
+        - !Ref RedisNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  RedisEvictionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-redis-evictions-alarm'
+      AlarmDescription: Alert when Redis evictions occur (memory pressure)
+      Namespace: AWS/ElastiCache
+      MetricName: Evictions
+      Dimensions:
+        - Name: ReplicationGroupId
+          Value: !Ref RedisCluster
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 100
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref RedisNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  RedisClusterId:
+    Description: Redis replication group ID
+    Value: !Ref RedisCluster
+    Export:
+      Name: !Sub '${Environment}-redis-cluster-id'
+
+  RedisPrimaryEndpoint:
+    Description: Redis primary endpoint
+    Value: !GetAtt RedisCluster.PrimaryEndPoint.Address
+    Export:
+      Name: !Sub '${Environment}-redis-primary-endpoint'
+
+  RedisPrimaryPort:
+    Description: Redis primary port
+    Value: !GetAtt RedisCluster.PrimaryEndPoint.Port
+    Export:
+      Name: !Sub '${Environment}-redis-primary-port'
+
+  RedisSecurityGroupId:
+    Description: Redis security group ID
+    Value: !Ref RedisSecurityGroup
+    Export:
+      Name: !Sub '${Environment}-redis-sg-id'
+
+  RedisAuthTokenSecretArn:
+    Description: Redis auth token secret ARN
+    Value: !Ref RedisAuthToken
+    Export:
+      Name: !Sub '${Environment}-redis-auth-token-arn'

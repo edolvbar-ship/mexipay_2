@@ -1,0 +1,253 @@
+<div class="permission-tester-container">
+  <!-- Admin Check -->
+  <div *ngIf="!isAdmin" class="access-denied">
+    <p-card header="Acceso Denegado" styleClass="p-card-danger">
+      <p>
+        <i class="pi pi-lock" style="font-size: 2rem; color: #e74c3c;"></i>
+      </p>
+      <p style="font-size: 1.2rem; margin-top: 1rem;">
+        Esta herramienta está disponible solo para administradores.
+      </p>
+      <p style="color: #666;">
+        Si necesita acceso, contacte con su administrador del sistema.
+      </p>
+    </p-card>
+  </div>
+
+  <!-- Main Content (Admin Only) -->
+  <div *ngIf="isAdmin">
+    <p-card header="Permission Tester - Herramienta de Pruebas de Permisos" styleClass="p-card-info">
+      <p class="description">
+        Herramienta administrativa para probar permisos de usuarios. Seleccione un usuario y pruebe todos los recursos
+        para identificar problemas en la configuración de permisos.
+      </p>
+
+      <!-- User Selection Form -->
+      <div class="user-selection">
+        <form [formGroup]="testForm">
+          <div class="form-group">
+            <label for="userSelect">Seleccionar Usuario:</label>
+            <p-select 
+              id="userSelect"
+              formControlName="selectedUser"
+              [options]="users"
+              optionLabel="fullName"
+              optionValue="null"
+              [filter]="true"
+              [showClear]="true"
+              placeholder="Seleccione un usuario..."
+              [style]="{'width': '100%', 'max-width': '400px'}"
+              (onChange)="onUserSelect($event.value)">
+              <ng-template let-user pTemplate="item">
+                <div class="user-item">
+                  <div class="user-name">{{ user.fullName }}</div>
+                  <div class="user-details">
+                    <small>@{{ user.username }} | Profile: {{ user.id_profile }}</small>
+                  </div>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+        </form>
+      </div>
+
+      <!-- Selected User Info -->
+      <div *ngIf="selectedUser" class="selected-user-info">
+        <p-card header="Usuario Seleccionado" styleClass="p-card-secondary">
+          <div class="user-info-grid">
+            <div class="info-item">
+              <strong>Nombre:</strong> {{ selectedUser.fullName }}
+            </div>
+            <div class="info-item">
+              <strong>Username:</strong> {{ selectedUser.username }}
+            </div>
+            <div class="info-item">
+              <strong>Email:</strong> {{ selectedUser.mail }}
+            </div>
+            <div class="info-item">
+              <strong>Perfil ID:</strong> {{ selectedUser.id_profile }}
+            </div>
+          </div>
+        </p-card>
+      </div>
+
+      <!-- Test Controls -->
+      <div *ngIf="selectedUser" class="test-controls">
+        <div class="control-buttons">
+          <p-button 
+            label="Probar Todos los Recursos" 
+            icon="pi pi-play"
+            [disabled]="testing || !selectedUser"
+            (onClick)="testAllResources()"
+            styleClass="p-button-primary">
+          </p-button>
+          
+          <p-button 
+            label="Exportar Resultados" 
+            icon="pi pi-download"
+            [disabled]="permissionTests.length === 0"
+            (onClick)="exportResults()"
+            styleClass="p-button-outlined">
+          </p-button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div *ngIf="testing" class="progress-section">
+          <p-progressBar [value]="testProgress" [showValue]="true"></p-progressBar>
+          <p class="progress-text">Probando recursos... {{ testProgress }}%</p>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Test Summary -->
+    <div *ngIf="testSummary.total > 0" class="test-summary">
+      <p-card header="Resumen de Pruebas" styleClass="p-card-info">
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="summary-number">{{ testSummary.total }}</div>
+            <div class="summary-label">Total</div>
+          </div>
+          <div class="summary-item passed">
+            <div class="summary-number">{{ testSummary.passed }}</div>
+            <div class="summary-label">Pasaron</div>
+          </div>
+          <div class="summary-item failed">
+            <div class="summary-number">{{ testSummary.failed }}</div>
+            <div class="summary-label">Fallaron</div>
+          </div>
+          <div class="summary-item errors">
+            <div class="summary-number">{{ testSummary.errors }}</div>
+            <div class="summary-label">Errores</div>
+          </div>
+        </div>
+      </p-card>
+    </div>
+
+    <!-- Test Results Table -->
+    <div *ngIf="permissionTests.length > 0" class="test-results">
+      <p-card header="Resultados Detallados" styleClass="p-card-default">
+        <p-table [value]="permissionTests" [scrollable]="true" scrollHeight="400px">
+          <!-- Resource Column -->
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Recurso</th>
+              <th>URL</th>
+              <th>Estado</th>
+              <th>Permisos Esperados</th>
+              <th>Resultado Real</th>
+              <th>Comparación</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-test>
+            <tr>
+              <!-- Resource Name -->
+              <td>
+                <div class="resource-name">
+                  <strong>{{ test.resource.resource_name }}</strong>
+                  <div class="resource-id">ID: {{ test.resource.id }}</div>
+                </div>
+              </td>
+
+              <!-- Resource URL -->
+              <td>
+                <p-chip [label]="test.resource.resource_url" styleClass="p-chip-secondary"></p-chip>
+              </td>
+
+              <!-- Status -->
+              <td>
+                <p-tag 
+                  [value]="test.overallStatus" 
+                  [severity]="getSeverity(test.overallStatus)"
+                  [icon]="getStatusIcon(test.overallStatus)">
+                </p-tag>
+              </td>
+
+              <!-- Expected Permissions -->
+              <td>
+                <div class="permissions-grid">
+                  <div class="permission-item">
+                    <span class="perm-label">C:</span>
+                    <span class="perm-value" [class.has-permission]="test.expectedPermissions.create === 1">
+                      {{ test.expectedPermissions.create }}
+                    </span>
+                  </div>
+                  <div class="permission-item">
+                    <span class="perm-label">E:</span>
+                    <span class="perm-value" [class.has-permission]="test.expectedPermissions.edit === 1">
+                      {{ test.expectedPermissions.edit }}
+                    </span>
+                  </div>
+                  <div class="permission-item">
+                    <span class="perm-label">D:</span>
+                    <span class="perm-value" [class.has-permission]="test.expectedPermissions.delete === 1">
+                      {{ test.expectedPermissions.delete }}
+                    </span>
+                  </div>
+                  <div class="permission-item">
+                    <span class="perm-label">S:</span>
+                    <span class="perm-value" [class.has-permission]="test.expectedPermissions.select === 1">
+                      {{ test.expectedPermissions.select }}
+                    </span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Actual Results -->
+              <td>
+                <div class="actual-results">
+                  <div class="result-status">
+                    <span class="status-label">Estado:</span>
+                    <span class="status-value" [class.success]="test.actualResults.success" [class.error]="!test.actualResults.success">
+                      {{ test.actualResults.success ? 'Éxito' : 'Error' }}
+                    </span>
+                  </div>
+                  <div *ngIf="test.actualResults.statusCode" class="status-code">
+                    <span class="status-label">Código:</span>
+                    <span class="status-value">{{ test.actualResults.statusCode }}</span>
+                  </div>
+                  <div *ngIf="test.actualResults.error" class="error-message" [pTooltip]="test.actualResults.error">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    <span>Error</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Permission Comparison -->
+              <td>
+                <div class="comparison-grid">
+                  <div class="comparison-item">
+                    <span class="perm-label">C:</span>
+                    <i class="pi" [class.pi-check]="test.permissionMatch.create" [class.pi-times]="!test.permissionMatch.create"
+                       [class.match]="test.permissionMatch.create" [class.no-match]="!test.permissionMatch.create"></i>
+                  </div>
+                  <div class="comparison-item">
+                    <span class="perm-label">E:</span>
+                    <i class="pi" [class.pi-check]="test.permissionMatch.edit" [class.pi-times]="!test.permissionMatch.edit"
+                       [class.match]="test.permissionMatch.edit" [class.no-match]="!test.permissionMatch.edit"></i>
+                  </div>
+                  <div class="comparison-item">
+                    <span class="perm-label">D:</span>
+                    <i class="pi" [class.pi-check]="test.permissionMatch.delete" [class.pi-times]="!test.permissionMatch.delete"
+                       [class.match]="test.permissionMatch.delete" [class.no-match]="!test.permissionMatch.delete"></i>
+                  </div>
+                  <div class="comparison-item">
+                    <span class="perm-label">S:</span>
+                    <i class="pi" [class.pi-check]="test.permissionMatch.select" [class.pi-times]="!test.permissionMatch.select"
+                       [class.match]="test.permissionMatch.select" [class.no-match]="!test.permissionMatch.select"></i>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-state">
+      <p-progressBar mode="indeterminate"></p-progressBar>
+      <p>Cargando datos...</p>
+    </div>
+  </div>
+</div>

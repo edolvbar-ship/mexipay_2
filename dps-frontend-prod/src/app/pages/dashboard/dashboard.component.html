@@ -1,0 +1,626 @@
+<div class="dashboard-container">
+  <!-- Header with Quick Date Options -->
+  <div class="dashboard-header">
+    <section-title title="Panel de Control">
+    </section-title>
+
+    <!-- Merchant Information Card -->
+    <div class="merchant-info-card" *ngIf="merchantInfo || isLoadingMerchant">
+      <div class="merchant-card-content">
+        <div class="merchant-icon">
+          <i class="pi pi-building"></i>
+        </div>
+        <div class="merchant-details">
+          <div class="merchant-label">Comercio</div>
+          <div class="merchant-name" *ngIf="!isLoadingMerchant; else loadingMerchant">
+            {{ merchantInfo?.['Nombre Comercio'] || 'Comercio no disponible' }}
+          </div>
+          <ng-template #loadingMerchant>
+            <div class="merchant-loading">
+              <div class="loading-dots"></div>
+            </div>
+          </ng-template>
+        </div>
+        <div class="merchant-badge" *ngIf="merchantInfo?.['Selia ID']">
+          <span class="badge-text">ID: {{ merchantInfo['Selia ID'] }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Date Presets -->
+    <div class="quick-date-presets" *ngIf="!isLoading">
+      <div class="presets-label">Rango rápido:</div>
+      <div class="presets-buttons">
+        <button
+          *ngFor="let preset of quickDatePresets"
+          class="preset-btn"
+          (click)="onQuickDateSelect(preset)"
+          [disabled]="isLoading"
+          [class.active]="isActivePreset(preset)">
+          {{ preset.label }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="error-message" role="alert">
+    <div class="error-icon">⚠️</div>
+    <div class="error-content">
+      <p class="error-title">Error</p>
+      <p class="error-text">{{ errorMessage }}</p>
+    </div>
+    <button class="error-retry" (click)="loadDashboardData(dateRange)">Reintentar</button>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div *ngIf="isLoading && isInitialLoad" class="loading-overlay">
+    <div class="loading-content">
+      <div class="spinner-large"></div>
+      <p class="loading-text">Cargando datos del dashboard...</p>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="dashboard-content" [class.data-updated]="false">
+
+    <!-- Quick Stats Bar -->
+    <!-- Quick Stats Bar - FIXED to show real data -->
+    <div class="quick-stats-bar" *ngIf="dataLoaded">
+      <div class="stat-item">
+        <div class="stat-value">
+          {{ getTotalTransactions() | number }}
+        </div>
+        <div class="stat-label">Transacciones Totales</div>
+        <div class="stat-trend">
+          <span class="trend-icon">↗</span>
+          <span class="trend-value">+{{ getDailyGrowth() }}%</span>
+        </div>
+      </div>
+
+      <div class="stat-divider"></div>
+
+      <div class="stat-item">
+        <div class="stat-value">
+          {{ getApprovedCount() | number }}
+        </div>
+        <div class="stat-label">Aprobadas</div>
+        <div class="stat-trend success">
+          <span class="trend-icon">↗</span>
+          <span class="trend-value">+{{ getApprovalGrowth() }}%</span>
+        </div>
+      </div>
+
+      <div class="stat-divider"></div>
+
+      <div class="stat-item">
+        <div class="stat-value">
+          {{ getRejectedCount() | number }}
+        </div>
+        <div class="stat-label">Rechazadas</div>
+        <div class="stat-trend warning">
+          <span class="trend-icon">↘</span>
+          <span class="trend-value">{{ getRejectionTrend() }}%</span>
+        </div>
+      </div>
+
+      <div class="stat-divider"></div>
+
+      <div class="stat-item">
+        <div class="stat-value">
+          {{ calculateApprovalRate() }}%
+        </div>
+        <div class="stat-label">Tasa Aprobación</div>
+        <div class="stat-trend" [class]="getApprovalRateTrendClass()">
+          <span class="trend-icon">{{ getApprovalRateTrendIcon() }}</span>
+          <span class="trend-value">{{ getApprovalRateTrend() }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Real-time Updates -->
+    <!-- Real-time Updates - Show actual recent transactions -->
+    <div class="recent-transactions" *ngIf="dataLoaded && getRecentTransactions().length > 0">
+      <div class="recent-transactions-header">
+        <h3>🔄 Transacciones Recientes</h3>
+        <span class="recent-timestamp">
+      Actualizado: {{ lastUpdateTime | date:'HH:mm:ss' }}
+    </span>
+      </div>
+      <div class="recent-transactions-list">
+        <div *ngFor="let transaction of getRecentTransactions()"
+             class="recent-transaction-item"
+             [class.approved]="transaction.status === 'approved'"
+             [class.rejected]="transaction.status === 'rejected'">
+          <div class="recent-transaction-icon" [class]="transaction.status === 'approved' ? 'approved' : 'rejected'">
+            {{ transaction.status === 'approved' ? '✓' : '✗' }}
+          </div>
+          <div class="recent-transaction-content">
+            <div class="recent-transaction-description">
+              {{ transaction.description || 'Transacción ' + (transaction.status === 'approved' ? 'aprobada' : 'rechazada') }}
+            </div>
+            <div class="recent-transaction-meta">
+              <span class="recent-transaction-amount" *ngIf="transaction.amount">${{ transaction.amount | number:'1.2-2' }}</span>
+              <span class="recent-transaction-time" *ngIf="transaction.timestamp">{{ transaction.timestamp | date:'HH:mm:ss' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Insights -->
+    <div class="insights-grid" *ngIf="dataLoaded && performanceInsights.length > 0">
+      <div class="insights-header">
+        <h3>📊 Insights de Rendimiento</h3>
+        <span class="insights-count">{{ performanceInsights.length }} métricas</span>
+      </div>
+      <div class="insights-cards">
+        <div *ngFor="let insight of performanceInsights" class="insight-card" [class]="'insight-' + insight.color">
+          <div class="insight-icon">{{ insight.icon }}</div>
+          <div class="insight-content">
+            <h4 class="insight-title">{{ insight.title }}</h4>
+            <p class="insight-description">{{ insight.description }}</p>
+            <div class="insight-footer">
+              <span class="insight-value">{{ insight.value }}</span>
+              <span class="insight-change" [class]="'change-' + (insight.change > 0 ? 'up' : insight.change < 0 ? 'down' : 'neutral')">
+                {{ insight.change > 0 ? '↗' : insight.change < 0 ? '↘' : '→' }}
+                {{ math.abs(insight.change) }}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid (Your Original Layout - Enhanced) -->
+    <div class="grid grid-cols-4 gap-6 auto-rows-max xl:grid-cols-10 w-full" *ngIf="dataLoaded">
+
+      <!-- Donut Charts with Skeleton -->
+      <div class="col-span-4 md:col-span-2 xl:col-span-3 h-full">
+        <div class="card-skeleton" *ngIf="isLoadingChart; else donutChart1">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-chart"></div>
+        </div>
+        <ng-template #donutChart1>
+          <card-dounut-chart
+            [title]="'Total de Transacciones'"
+            [subTitle]="'Total de rango'"
+            [infoChart]="donutInfoChartTxt">
+          </card-dounut-chart>
+        </ng-template>
+      </div>
+
+      <div class="col-span-4 md:col-span-2 lg:col-span-3">
+        <div class="card-skeleton" *ngIf="isLoadingChart; else donutChart2">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-chart"></div>
+        </div>
+        <ng-template #donutChart2>
+          <card-dounut-chart
+            [title]="'Total de Comercios Activos'"
+            [subTitle]="''"
+            [infoChart]="donutInfoChartActive">
+          </card-dounut-chart>
+        </ng-template>
+      </div>
+
+      <!-- Top Rejections -->
+      <div class="col-span-4 md:col-span-4 lg:col-span-4" *ngIf="isTopReject">
+        <div class="card-skeleton" *ngIf="isLoadingInsights; else topRejectCard">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-content"></div>
+        </div>
+        <ng-template #topRejectCard>
+          <card-container>
+            <div class="card-header-enhanced">
+              <text-title text="Top 5 de Rechazos de Tarjeta" size="medium"></text-title>
+              <div class="card-badge">Actualizado ahora</div>
+            </div>
+            <text-type text="Principales motivos de rechazo" size="small" variant="disable"></text-type>
+
+            <div class="rejections-grid">
+              <div class="rejections-column">
+                <ng-container *ngFor="let item of topReject.slice(0, 3)">
+                  <div class="rejection-item" *ngIf="item">
+                    <div class="rejection-bullet" [style.background]="getColor(item.color)"></div>
+                    <text-type [text]="textLowerCase(item?.name)" size="small"></text-type>
+                    <span class="rejection-count">{{ item.count || 0 }}</span>
+                  </div>
+                </ng-container>
+              </div>
+              <div class="rejections-column">
+                <ng-container *ngFor="let item of topReject.slice(3, 5)">
+                  <div class="rejection-item" *ngIf="item">
+                    <div class="rejection-bullet" [style.background]="getColor(item.color)"></div>
+                    <text-type [text]="textLowerCase(item?.name)" size="small"></text-type>
+                    <span class="rejection-count">{{ item.count || 0 }}</span>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+          </card-container>
+        </ng-template>
+      </div>
+
+      <!-- Main Chart -->
+      <div class="col-span-4 lg:col-span-8">
+        <div class="card-skeleton" *ngIf="isLoadingChart; else mainChartCard">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-chart-large"></div>
+        </div>
+        <ng-template #mainChartCard>
+          <card-container class="enhanced-card">
+            <div class="card-header-enhanced">
+              <div class="chart-header-left">
+                <text-title text="Transacciones" size="medium"></text-title>
+                <text-type text="Evolución diaria - Aprobadas vs Rechazadas" size="small" variant="disable"></text-type>
+              </div>
+              <div class="chart-header-right">
+                <div class="chart-legend">
+                  <div class="legend-item">
+                    <span class="legend-dot approved"></span>
+                    <text-type text="Aprobadas" size="xsmall"></text-type>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-dot rejected"></span>
+                    <text-type text="Rechazadas" size="xsmall"></text-type>
+                  </div>
+                </div>
+                <div class="date-controls">
+                  <app-calendar
+                    [disabled]="isLoading"
+                    (dateEmitted)="handleDataTable($event)"
+                    [rangeDates]="rangeCalendar"
+                    >
+                  </app-calendar>
+                  <button
+                    class="refresh-btn-small"
+                    (click)="loadDashboardData(dateRange)"
+                    [disabled]="isLoading"
+                    title="Actualizar datos">
+                    <span class="refresh-icon">↻</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="chart-container">
+              <bar-chart
+                [dataApproved]="barChartApproved"
+                [dataRejected]="barChartRejected"
+                [labels]="labelsRange"
+                [max]="maxBarChart">
+              </bar-chart>
+              <div class="chart-stats">
+                <div class="chart-stat">
+                  <span class="stat-label">Máximo:</span>
+                  <span class="stat-value">${{ getMaxValue() | number:'1.0-0' }}</span>
+                </div>
+                <div class="chart-stat">
+                  <span class="stat-label">Promedio:</span>
+                  <span class="stat-value">${{ getAverageValue() | number:'1.0-0' }}</span>
+                </div>
+                <div class="chart-stat">
+                  <span class="stat-label">Crecimiento:</span>
+                  <span class="stat-value trend-up">+{{ getGrowthRate() }}%</span>
+                </div>
+              </div>
+            </div>
+          </card-container>
+        </ng-template>
+      </div>
+
+      <!-- Payment Link Card -->
+      <div class="col-span-4 lg:col-span-2">
+        <card-container class="payment-link-card">
+          <div class="payment-link-content">
+            <text-title text="Links de Pago" size="medium"></text-title>
+            <text-type
+              class="payment-link-text"
+              text="Acepta pagos con tarjeta desde cualquier lugar, utilizando el link de pago."
+              size="regular">
+            </text-type>
+            <div class="payment-link-image">
+              <img src="../../../assets/card-img.png" alt="Pagos con tarjeta">
+            </div>
+            <div class="payment-link-button">
+              <button
+                routerLink="/links-de-pago"
+                type="button"
+                class="link-button">
+                <i class="pi pi-link mr-2 w-4 h-4"></i>
+                <span class="button-text">Crear Link de Pago</span>
+              </button>
+            </div>
+          </div>
+        </card-container>
+      </div>
+
+      <!-- Card Type Donut -->
+      <div class="col-span-4 lg:col-span-5">
+        <div class="card-skeleton" *ngIf="isLoadingChart; else cardTypeCard">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-content-flex">
+            <div class="skeleton-list"></div>
+            <div class="skeleton-chart-small"></div>
+          </div>
+        </div>
+        <ng-template #cardTypeCard>
+          <card-container class="enhanced-card">
+            <div class="card-header-enhanced">
+              <text-title text="Marca de Tarjeta" size="medium"></text-title>
+              <div class="card-badge">{{ donutItemCards.length }} tipos</div>
+            </div>
+            <div class="donut-container">
+              <ng-container *ngIf="isValidData(donutTypeCards); else noDataTemplate">
+                <div class="donut-legend">
+                  <ng-container *ngFor="let item of donutItemCards">
+                    <div class="legend-row">
+                      <span class="legend-color" [style.background]="item.color"></span>
+                      <text-type [text]="textLowerCase(item.name)" size="small"></text-type>
+                      <span class="legend-count">{{ item.count }}</span>
+                    </div>
+                  </ng-container>
+                </div>
+                <div class="donut-chart-wrapper">
+                  <donut-chart
+                    [colors]="donutThreeColors"
+                    [dataValues]="donutTypeCards">
+                  </donut-chart>
+                  <div class="donut-center-text">
+                    <span class="donut-total">{{ getTotalCards() }}</span>
+                    <span class="donut-label">transacciones</span>
+                  </div>
+                </div>
+              </ng-container>
+
+              <ng-template #noDataTemplate>
+                <div class="no-data-state">
+                  <text-type [text]="'Información no disponible'"></text-type>
+                </div>
+              </ng-template>
+            </div>
+          </card-container>
+        </ng-template>
+      </div>
+
+      <!-- Product Type Donut -->
+      <div class="col-span-4 lg:col-span-5">
+        <div class="card-skeleton" *ngIf="isLoadingChart; else productTypeCard">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-content-flex">
+            <div class="skeleton-list"></div>
+            <div class="skeleton-chart-small"></div>
+          </div>
+        </div>
+        <ng-template #productTypeCard>
+          <card-container class="enhanced-card">
+            <div class="card-header-enhanced">
+              <text-title text="Tipo de Producto" size="medium"></text-title>
+              <div class="card-badge">{{ donutItemProducts.length }} tipos</div>
+            </div>
+            <div class="donut-container">
+              <ng-container *ngIf="isValidData(donutTypeProduct); else noDataTemplate">
+                <div class="donut-legend">
+                  <ng-container *ngFor="let item of donutItemProducts">
+                    <div class="legend-row">
+                      <span class="legend-color" [style.background]="item.color"></span>
+                      <text-type [text]="textLowerCase(item.name)" size="small"></text-type>
+                      <span class="legend-count">{{ item.count }}</span>
+                    </div>
+                  </ng-container>
+                </div>
+                <div class="donut-chart-wrapper">
+                  <donut-chart
+                    [colors]="donutThreeColorProduct"
+                    [dataValues]="donutTypeProduct">
+                  </donut-chart>
+                  <div class="donut-center-text">
+                    <span class="donut-total">{{ getTotalProducts() }}</span>
+                    <span class="donut-label">transacciones</span>
+                  </div>
+                </div>
+              </ng-container>
+
+              <ng-template #noDataTemplate>
+                <div class="no-data-state">
+                  <text-type [text]="'Información no disponible'"></text-type>
+                </div>
+              </ng-template>
+            </div>
+          </card-container>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Data Freshness Indicator -->
+    <div class="data-freshness" *ngIf="dataLoaded">
+      <div class="freshness-indicator">
+        <span class="indicator-dot" [class.fresh]="!isLoading"></span>
+        <span class="indicator-text">
+          {{ isLoading ? 'Actualizando datos...' : 'Datos actualizados ' + getLastUpdateTime() }}
+        </span>
+      </div>
+      <button
+        class="refresh-data-btn"
+        (click)="loadDashboardData(dateRange)"
+        [disabled]="isLoading">
+        {{ isLoading ? 'Actualizando...' : 'Actualizar ahora' }}
+      </button>
+    </div>
+
+  </div>
+
+<!--  <div class="legend-row" [style.&#45;&#45;item-index]="i" *ngFor="let item of donutItemCards; let i = index">-->
+</div>
+<!--<div class="w-full">-->
+<!--    <section-title title="Dashboard">-->
+<!--    </section-title>-->
+
+<!--    &lt;!&ndash; Error Message &ndash;&gt;-->
+<!--    <div *ngIf="errorMessage" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">-->
+<!--      <p class="font-bold">Error</p>-->
+<!--      <p>{{ errorMessage }}</p>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Loading Spinner &ndash;&gt;-->
+<!--    <div *ngIf="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">-->
+<!--      <div class="bg-white p-4 rounded-lg">-->
+<!--        <app-spinner></app-spinner>-->
+<!--        <p class="mt-2">Loading dashboard data...</p>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--    <div class="grid grid-cols-4 gap-4 auto-rows-max xl:grid-cols-10 w-full">-->
+
+<!--        <div class="col-span-4 md:col-span-2 xl:col-span-3 h-full" *ngIf="!isLoading">-->
+<!--            <card-dounut-chart  [title]="'Total de Transacciones'" [subTitle]="'Total de rango'" [infoChart]="donutInfoChartTxt"></card-dounut-chart>-->
+<!--        </div>-->
+<!--        <div class="col-span-4 md:col-span-2 lg:col-span-3" *ngIf="!isLoading">-->
+<!--            <card-dounut-chart  [title]="'Total de Comercios Activos'" [subTitle]="''" [infoChart]="donutInfoChartActive"></card-dounut-chart>-->
+<!--        </div>-->
+<!--        <div class="col-span-4 md:col-span-4 lg:col-span-4" *ngIf="isTopReject">-->
+<!--            <card-container >-->
+<!--                <text-title text="Top 5 de rechazos de tarjeta" size="regular"></text-title>-->
+<!--                <text-type text="" size="small" variant="disable"></text-type>-->
+
+<!--                <div class="flex mt-6">-->
+<!--                    <div class="flex items-center w-1/2">-->
+<!--                        <div>-->
+<!--                            <ng-container *ngFor="let item of topReject.slice(0, 3)">-->
+<!--                                <span class="flex items-center my-3" *ngIf="item">-->
+<!--                                    <div class="w-6 h-3.5 bg-[#6CB7AE] rounded mr-2"></div>-->
+<!--                                    <text-type [text]="textLowerCase(item?.name)" size="small"></text-type>-->
+<!--                                </span>-->
+<!--                            </ng-container>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                    <div class="flex items-center w-1/2">-->
+<!--                        <div>-->
+<!--                            <ng-container *ngFor="let item of topReject.slice(3, 5)">-->
+<!--                                <span class="flex items-center my-3" *ngIf="item">-->
+<!--                                    <div class="w-6 h-3.5 bg-[#6CB7AE] rounded mr-2"></div>-->
+<!--                                    <text-type [text]="textLowerCase(item?.name)" size="small"></text-type>-->
+<!--                                </span>-->
+<!--                            </ng-container>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+<!--            </card-container>-->
+<!--        </div>-->
+
+<!--        <div class="col-span-4 lg:col-span-8">-->
+<!--            <card-container>-->
+<!--                <div class="flex gap-4 items-center justify-between flex-wrap mb-4">-->
+<!--                    <div class="">-->
+<!--                        <text-title text="Transacciones" size="medium">-->
+<!--                        </text-title>-->
+<!--                        <text-type text="Aprobadas - Rechazadas" size="small" variant="disable">-->
+<!--                        </text-type>-->
+<!--                    </div>-->
+<!--                    <div class="">-->
+<!--                        <span class="flex items-center gap-4">-->
+<!--                            <div class="flex items-center my-3 gap-2">-->
+<!--                                <i ngClass="pi pi-circle-fill text-primary"></i>-->
+<!--                                <text-type text="Aprobadas" size="xsmall">-->
+<!--                                </text-type>-->
+<!--                            </div>-->
+<!--                            <div class="flex items-center gap-2">-->
+<!--                                <i ngClass="pi pi-circle-fill text-[#1F7766]"></i>-->
+<!--                                <text-type text="Rechazadas" size="xsmall">-->
+<!--                                </text-type>-->
+<!--                            </div>-->
+<!--                        </span>-->
+<!--                    </div>-->
+<!--                    <div class="flex gap-4 items-center">-->
+<!--                        <app-calendar (dateEmitted)="handleDataTable($event)" [rangeDates]="rangeCalendar">-->
+<!--                        </app-calendar>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div *ngIf="!isLoading">-->
+<!--                    <bar-chart [dataApproved]="barChartApproved" [dataRejected]="barChartRejected" [labels]="labelsRange" [max]="maxBarChart"></bar-chart>-->
+<!--                </div>-->
+<!--            </card-container>-->
+<!--        </div>-->
+<!--        <div class="col-span-4 lg:col-span-2">-->
+<!--            <card-container>-->
+<!--                <div>-->
+<!--                    <text-title text="Transacciones" size="medium">-->
+<!--                    </text-title>-->
+<!--                    <text-type class="leading-loose mt-2"-->
+<!--                        text="Acepta pagos con tarjeta desde cualquier lugar, utilizando el link de pago."-->
+<!--                        size="regular">-->
+<!--                    </text-type>-->
+<!--                </div>-->
+<!--                <div>-->
+<!--                    <img src="../../../assets/card-img.png" alt="">-->
+<!--                </div>-->
+<!--                <div class="flex items-center justify-center">-->
+<!--                    <button routerLink="/links-de-pago" type="button"-->
+<!--                        class="flex items-center justify-center h-8 rounded-full min-w-40 px-4 font-medium border-[1px] border-light-gray bg-primary text-white">-->
+<!--                        <i class="pi pi-link mr-2 w-4 h-4"></i>-->
+<!--                        <span class="text-[13px]">Crear Link de Pago</span>-->
+<!--                    </button>-->
+<!--                </div>-->
+<!--            </card-container>-->
+<!--        </div>-->
+
+<!--        <div class="col-span-4 lg:col-span-5">-->
+<!--            <card-container>-->
+<!--                <div class="flex gap-11 items-center">-->
+<!--                    <text-title text="Marca de Tarjeta" size="medium">-->
+<!--                    </text-title>-->
+<!--                </div>-->
+<!--                <div class="flex justify-between items-center">-->
+<!--                    <ng-container *ngIf="isValidData(donutTypeCards); else noDataTemplate">-->
+<!--                        <div class="flex gap-11">-->
+<!--                        <ng-container *ngFor="let item of donutItemCards">-->
+<!--                            <span class="flex items-center my-3 gap-2 text-sm">-->
+<!--                            <i ngClass="pi pi-circle-fill" [ngStyle]="{'color': item.color}"></i>-->
+<!--                            <text-type [text]="textLowerCase(item.name)" size="regular"></text-type>-->
+<!--                            </span>-->
+<!--                        </ng-container>-->
+<!--                        </div>-->
+<!--                        <div class="mx-auto my-auto size-20 items-center" *ngIf="!isLoading">-->
+<!--                        <donut-chart [colors]="donutThreeColors" [dataValues]="donutTypeCards"></donut-chart>-->
+<!--                        </div>-->
+<!--                    </ng-container>-->
+
+<!--                    <ng-template #noDataTemplate class="items-center">-->
+<!--                        <div class="h-20 text-primary text-[17px] font-bold leading-snug capitalize bg-light-primary w-full flex items-center justify-center text-center">-->
+<!--                        <text-type [text]="'Información no disponible'"></text-type>-->
+<!--                        </div>-->
+<!--                    </ng-template>-->
+<!--                </div>-->
+<!--            </card-container>-->
+<!--        </div>-->
+<!--        <div class="col-span-4 lg:col-span-5">-->
+<!--            <card-container>-->
+<!--                <div class="flex gap-11 items-center">-->
+<!--                    <text-title text="Tipo de Producto" size="medium">-->
+<!--                    </text-title>-->
+<!--                </div>-->
+<!--                <div class="flex justify-between items-center">-->
+<!--                    <ng-container *ngIf="isValidData(donutTypeProduct); else noDataTemplate">-->
+<!--                        <div class="flex gap-11">-->
+<!--                        <ng-container *ngFor="let item of donutItemProducts">-->
+<!--                            <span class="flex items-center my-3 gap-2 text-sm">-->
+<!--                            <i ngClass="pi pi-circle-fill" [ngStyle]="{'color': item.color}"></i>-->
+<!--                            <text-type [text]="textLowerCase(item.name)" size="regular"></text-type>-->
+<!--                            </span>-->
+<!--                        </ng-container>-->
+<!--                        </div>-->
+<!--                        <div class="mx-auto my-auto size-20 items-center" *ngIf="!isLoading">-->
+<!--                            <donut-chart [colors]="donutThreeColorProduct" [dataValues]="donutTypeProduct"></donut-chart>-->
+<!--                        </div>-->
+<!--                    </ng-container>-->
+
+<!--                    <ng-template #noDataTemplate class="items-center">-->
+<!--                        <div class="h-20 text-primary text-[17px] font-bold leading-snug capitalize bg-light-primary w-full flex items-center justify-center text-center">-->
+<!--                        <text-type [text]="'Información no disponible'"></text-type>-->
+<!--                        </div>-->
+<!--                    </ng-template>-->
+<!--                </div>-->
+<!--            </card-container>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->

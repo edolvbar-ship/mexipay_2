@@ -1,0 +1,21 @@
+<section-title
+    title="Listado de URLs Destino"
+    textBtn="Nueva URL"
+    [linkText]="linkNewRow"
+    [canCreate]="canCreate"
+    >
+</section-title>
+<card-container>
+    <table-layout 
+        [dataTable]="allData"
+        [actions]="actions" 
+        [showActions]="true" 
+        [actionsColumnIndex]="2"
+        [filter]="true"
+        >    
+    </table-layout>
+</card-container>
+<modal-confirm
+    (accept)="handleReject()" 
+    (reject)="handleAccept()">
+</modal-confirm>

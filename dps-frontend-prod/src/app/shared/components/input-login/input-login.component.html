@@ -1,0 +1,23 @@
+<div *ngIf="variant === 'primary'" class="relative">
+    <input
+        type={{type}}
+        id={{id}}
+        class="block h-full rounded-t-lg pl-10 pr-4 py-2 w-full text-base text-gray border-0 border-b-2 border-gray appearance-none focus:outline-none focus:ring-0 focus:border-primary" placeholder={{placeholder}}/>
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+            <i class="pi pi-envelope"></i>
+        </span>
+</div>
+
+<div *ngIf="variant === 'secondary'" class="relative">
+    <input
+        type={{type}}
+        id={{id}}
+        class="block h-full rounded-t-lg  px-10 py-2 w-full text-base text-gray border-0 border-b-2 border-gray appearance-none focus:outline-none focus:ring-0 focus:border-primary" placeholder={{placeholder}}/>
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+            <img src="../../../assets/core-icons/ico-lock.svg" alt="" srcset="" class="w-5">
+        </span>
+        <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-black">
+            <img src="../../../assets/core-icons/ico-hide.svg" alt="" srcset="" class="w-5">
+        </span>
+</div>
+

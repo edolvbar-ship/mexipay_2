@@ -1,0 +1,389 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'PCI DSS GuardDuty Threat Detection and Monitoring'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    Description: Environment tag (e.g., prod, qa)
+  
+  NotificationEmail:
+    Type: String
+    Default: andres.gtz@programmer.city
+    Description: Email for GuardDuty findings notifications
+  
+  EnableS3Protection:
+    Type: String
+    Default: true
+    Description: Enable S3 protection
+  
+  EnableKubernetesProtection:
+    Type: String
+    Default: false
+    Description: Enable Kubernetes protection
+  
+  EnableMalwareProtection:
+    Type: String
+    Default: true
+    Description: Enable malware protection for EC2
+
+Conditions:
+  EnableS3ProtectionCondition: !Equals [!Ref EnableS3Protection, "true"]
+  EnableKubernetesProtectionCondition: !Equals [!Ref EnableKubernetesProtection, "true"]
+  EnableMalwareProtectionCondition: !Equals [!Ref EnableMalwareProtection, "true"]
+
+Resources:
+  # GuardDuty Detector
+  GuardDutyDetector:
+    Type: AWS::GuardDuty::Detector
+    Properties:
+      Enable: true
+      Features:
+        - Name: RDS_LOGIN_EVENTS
+          Status: ENABLED
+        - Name: EKS_AUDIT_LOGS
+          Status: ENABLED
+        - Name: LAMBDA_NETWORK_LOGS
+          Status: ENABLED
+        - Name: RUNTIME_MONITORING
+          Status: ENABLED
+        - Name: S3_DATA_EVENTS
+          Status: !If [EnableS3ProtectionCondition, ENABLED, DISABLED]
+        - Name: EBS_MALWARE_PROTECTION
+          Status: !If [EnableMalwareProtectionCondition, ENABLED, DISABLED]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: PCI-DSS
+          Value: 'true'
+
+  # S3 Bucket for GuardDuty Findings Export
+  GuardDutyFindingsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${Environment}-guardduty-findings-${AWS::AccountId}-${AWS::Region}'
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireFindings
+          Prefix: ''
+          Status: Enabled
+          ExpirationInDays: 90
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: PCI-DSS
+        Value: 'true'
+
+  GuardDutyFindingsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref GuardDutyFindingsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Deny
+          Principal: '*'
+          Action: 's3:*'
+          Resource:
+            - !Sub '${GuardDutyFindingsBucket.Arn}'
+            - !Sub '${GuardDutyFindingsBucket.Arn}/*'
+          Condition:
+            Bool:
+              aws:SecureTransport: 'false'
+        - Effect: Allow
+          Principal:
+            Service: guardduty.amazonaws.com
+          Action: s3:PutObject
+          Resource: !Sub '${GuardDutyFindingsBucket.Arn}/*'
+
+  # SNS Topic for GuardDuty Alerts
+  GuardDutyNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${Environment}-guardduty-alerts'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: PCI-DSS
+          Value: 'true'
+
+  # SNS Subscription for email notifications
+  GuardDutyEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      TopicArn: !Ref GuardDutyNotificationTopic
+      Endpoint: !Ref NotificationEmail
+
+  # CloudWatch Events Rule for GuardDuty Findings
+  GuardDutyFindingsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub '${Environment}-guardduty-findings'
+      Description: GuardDuty findings to SNS
+      EventPattern:
+        source:
+          - aws.guardduty
+        detail-type:
+          - GuardDuty Finding
+      State: ENABLED
+      Targets:
+        - Arn: !Ref GuardDutyNotificationTopic
+          Id: GuardDutyTarget
+
+  # Lambda Function for GuardDuty Findings Processing
+  GuardDutyProcessorLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-guardduty-processor'
+      Runtime: python3.14
+      Handler: index.lambda_handler
+      Role: !GetAtt GuardDutyProcessorRole.Arn
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          S3_BUCKET: !Ref GuardDutyFindingsBucket
+          SNS_TOPIC: !Ref GuardDutyNotificationTopic
+          SEVERITY_THRESHOLD: '5.0'
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          
+          def lambda_handler(event, context):
+              s3 = boto3.client('s3')
+              sns = boto3.client('sns')
+              
+              # Process GuardDuty finding
+              finding = event.get('detail', {})
+              severity = finding.get('severity', 0)
+              severity_threshold = float(os.environ.get('SEVERITY_THRESHOLD', '5.0'))
+              
+              # Store finding in S3
+              s3.put_object(
+                  Bucket=os.environ['S3_BUCKET'],
+                  Key=f"findings/{finding.get('id', 'unknown')}.json",
+                  Body=json.dumps(finding),
+                  ContentType='application/json'
+              )
+              
+              # Send SNS alert for high severity findings
+              if severity >= severity_threshold:
+                  alert_message = f"""
+                  GuardDuty Finding Alert
+                  
+                  Severity: {severity}
+                  Type: {finding.get('type', 'Unknown')}
+                  Description: {finding.get('description', 'No description')}
+                  Resource: {finding.get('resource', {})}
+                  Account: {finding.get('accountId', 'Unknown')}
+                  Region: {finding.get('region', 'Unknown')}
+                  Time: {finding.get('updatedAt', 'Unknown')}
+                  """
+                  
+                  sns.publish(
+                      TopicArn=os.environ['SNS_TOPIC'],
+                      Message=alert_message,
+                      Subject=f'GuardDuty High Severity Finding: {finding.get("type", "Unknown")}'
+                  )
+              
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('Finding processed')
+              }
+
+  GuardDutyProcessorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: GuardDutyProcessorS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub '${GuardDutyFindingsBucket.Arn}'
+                  - !Sub '${GuardDutyFindingsBucket.Arn}/*'
+        - PolicyName: GuardDutyProcessorSNSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref GuardDutyNotificationTopic
+        - PolicyName: GuardDutyProcessorGuardDutyAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - guardduty:GetFindings
+                  - guardduty:ListFindings
+                Resource: !Sub 'arn:aws:guardduty:${AWS::Region}:${AWS::AccountId}:detector/*'
+
+  GuardDutyProcessorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GuardDutyProcessorLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt GuardDutyFindingsRule.Arn
+
+  # CloudWatch Alarms for GuardDuty
+  GuardDutyHighSeverityAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-guardduty-high-severity-alarm'
+      AlarmDescription: Alert on high severity GuardDuty findings
+      Namespace: GuardDuty
+      MetricName: HighSeverityFindings
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref GuardDutyNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  GuardDutyTotalFindingsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-guardduty-total-findings-alarm'
+      AlarmDescription: Alert on high volume of GuardDuty findings
+      Namespace: GuardDuty
+      MetricName: TotalFindings
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 50
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref GuardDutyNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Publishing to CloudWatch Metrics
+  GuardDutyMetricsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub '${Environment}-guardduty-metrics'
+      Description: Publish GuardDuty findings to CloudWatch
+      EventPattern:
+        source:
+          - aws.guardduty
+        detail-type:
+          - GuardDuty Finding
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt GuardDutyMetricsLambda.Arn
+          Id: GuardDutyMetricsTarget
+
+  GuardDutyMetricsLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-guardduty-metrics'
+      Runtime: python3.14
+      Handler: index.lambda_handler
+      Role: !GetAtt GuardDutyProcessorRole.Arn
+      Timeout: 60
+      MemorySize: 128
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          
+          def lambda_handler(event, context):
+              cloudwatch = boto3.client('cloudwatch')
+              
+              finding = event.get('detail', {})
+              severity = finding.get('severity', 0)
+              
+              # Publish metrics
+              cloudwatch.put_metric_data(
+                  Namespace='GuardDuty',
+                  MetricData=[
+                      {
+                          'MetricName': 'TotalFindings',
+                          'Value': 1,
+                          'Unit': 'Count'
+                      },
+                      {
+                          'MetricName': 'HighSeverityFindings',
+                          'Value': 1 if severity >= 5.0 else 0,
+                          'Unit': 'Count'
+                      },
+                      {
+                          'MetricName': 'FindingSeverity',
+                          'Value': severity,
+                          'Unit': 'None'
+                      }
+                  ]
+              )
+              
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('Metrics published')
+              }
+
+  GuardDutyMetricsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GuardDutyMetricsLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt GuardDutyMetricsRule.Arn
+
+Outputs:
+  GuardDutyDetectorId:
+    Description: GuardDuty detector ID
+    Value: !Ref GuardDutyDetector
+    Export:
+      Name: !Sub '${Environment}-guardduty-detector-id'
+
+  GuardDutyFindingsBucketName:
+    Description: GuardDuty findings bucket name
+    Value: !Ref GuardDutyFindingsBucket
+    Export:
+      Name: !Sub '${Environment}-guardduty-findings-bucket'
+
+  GuardDutyNotificationTopicArn:
+    Description: GuardDuty notification topic ARN
+    Value: !Ref GuardDutyNotificationTopic
+    Export:
+      Name: !Sub '${Environment}-guardduty-notification-topic'

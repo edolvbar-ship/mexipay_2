@@ -1,0 +1,116 @@
+<section-title
+    [title]="title"
+    textBtn="Regresar"
+    [linkText]="linkText"
+    [canCreate]="true"
+    [icon]="'UNDO'"
+    >
+</section-title>
+<card-container class="grid w-full">
+    <div class="mb-6">
+        <text-title [text]="subtitle" size="xsmall" variant="secondary">
+        </text-title>
+    </div>
+    <form (submit)="$event.preventDefault()" action="" class="grid md:grid-cols-6 gap-6" [formGroup]="userFormGroup">
+        <div class="col-span-3">
+            <app-input-text
+                id="username"
+                label="Nombre de usuario"
+                formControlName="username"
+                [maxlength]="17"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-3">
+            <app-input-text
+                id="mail"
+                label="Correo Electrónico"
+                formControlName="mail"
+                [maxlength]="50"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-2">
+            <app-input-text
+                id="name"
+                label="Nombre"
+                formControlName="name"
+                [maxlength]="30"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-2">
+            <app-input-text
+                id="last_name"
+                label="Apellido"
+                formControlName="last_name"
+                [maxlength]="30"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-2">
+            <app-input-text
+                id="telephone"
+                label="Teléfono"
+                formControlName="telephone"
+                mask="(000) 000 0000*"
+                maxlength="20"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-3">
+            <app-input-select
+                id="id_profile"
+                label="Perfil"
+                [options]="idProfile"
+                formControlName="id_profile"
+                >
+            </app-input-select>
+        </div>
+        <div class="col-span-3">
+            <app-input-select
+                [options]="idClient"
+                id="cliente"
+                label="Cliente"
+                formControlName="id_cliente"
+                >
+                <option value="" disabled selected>Selecciona Una Opción</option>
+            </app-input-select>
+        </div>
+        
+        <div class="col-span-3">
+            <app-input-text
+                id="password"
+                label="Contraseña"
+                formControlName="password"
+                [type]="'password'"
+                [maxlength]="60"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-3">
+            <app-input-text
+                id="retryPassword"
+                label="Confirmar Contraseña"
+                formControlName="retryPassword"
+                [type]="'password'"
+                [maxlength]="60"
+                >
+            </app-input-text>
+        </div>
+        <div class="col-span-6 flex justify-end">
+            <action-button
+                (click)="saveForm()"
+                class="mt-6"
+                text="Guardar"
+                [linkIcon]="'SAVE'">
+            </action-button>
+        </div>
+    </form>
+</card-container>

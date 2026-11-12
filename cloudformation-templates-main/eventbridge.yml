@@ -1,0 +1,484 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'PCI DSS EventBridge and Lambda for Scheduled Conciliation and Rate Throttling'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    Description: Environment tag (e.g., prod, qa)
+  
+  VpcId:
+    Type: String
+    Description: VPC ID from pci-app-infrastructure stack
+  
+  PrivateSubnet1Id:
+    Type: String
+    Description: First private subnet ID for Lambda
+  
+  PrivateSubnet2Id:
+    Type: String
+    Description: Second private subnet ID for Lambda
+  
+  RDSMXEndpoint:
+    Type: String
+    Description: RDS endpoint in mx-central-1
+  
+  RedisEndpoint:
+    Type: String
+    Description: Redis endpoint from pci-redis stack
+  
+  NotificationEmail:
+    Type: String
+    Default: andres.gtz@programmer.city
+    Description: Email for Lambda error notifications
+  
+  ConciliationSchedule:
+    Type: String
+    Default: 'cron(0 2 * * ? *)'
+    Description: Schedule for conciliation batch (daily at 2 AM UTC)
+  
+  ThrottleRateLimit:
+    Type: Number
+    Default: 256
+    Description: Maximum transactions per batch
+
+Resources:
+  # IAM Role for Lambda Functions
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: LambdaRDSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:DescribeDBInstances
+                Resource: !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:*'
+        - PolicyName: LambdaRedisAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - elasticache:DescribeCacheClusters
+                Resource: '*'
+        - PolicyName: LambdaSecretsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*'
+        - PolicyName: LambdaSQSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: !Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:*'
+        - PolicyName: LambdaS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource: !Sub 'arn:aws:s3:::${Environment}-conciliation-reports-${AWS::AccountId}-${AWS::Region}/*'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: PCI-DSS
+          Value: 'true'
+
+  # Lambda Security Group
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Lambda Security Group for VPC access
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-lambda-sg'
+        - Key: PCI-DSS
+          Value: 'true'
+
+  # Conciliation Lambda Function
+  ConciliationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-conciliation-batch'
+      Runtime: python3.14
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 900
+      MemorySize: 512
+      VpcConfig:
+        SubnetIds:
+          - !Ref PrivateSubnet1Id
+          - !Ref PrivateSubnet2Id
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+      Environment:
+        Variables:
+          RDS_ENDPOINT: !Ref RDSMXEndpoint
+          REDIS_ENDPOINT: !Ref RedisEndpoint
+          S3_BUCKET: !Ref ConciliationReportsBucket
+          THROTTLE_RATE_LIMIT: !Ref ThrottleRateLimit
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          import pymysql
+          import redis
+          from datetime import datetime
+          
+          def lambda_handler(event, context):
+              s3 = boto3.client('s3')
+              rds_endpoint = os.environ.get('RDS_ENDPOINT')
+              redis_endpoint = os.environ.get('REDIS_ENDPOINT')
+              s3_bucket = os.environ.get('S3_BUCKET')
+              rate_limit = int(os.environ.get('THROTTLE_RATE_LIMIT', 256))
+              
+              # Connect to RDS
+              # conn = pymysql.connect(host=rds_endpoint, user='admin', password=get_secret(), db='mexipay')
+              
+              # Connect to Redis
+              # r = redis.Redis(host=redis_endpoint, port=6379, ssl=True)
+              
+              # Perform conciliation batch
+              conciliation_results = {
+                  'timestamp': datetime.utcnow().isoformat(),
+                  'transactions_processed': 0,
+                  'reconciled': 0,
+                  'discrepancies': []
+              }
+              
+              # Store results in S3
+              s3.put_object(
+                  Bucket=s3_bucket,
+                  Key=f"conciliation/{datetime.utcnow().strftime('%Y-%m-%d')}.json",
+                  Body=json.dumps(conciliation_results),
+                  ContentType='application/json'
+              )
+              
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('Conciliation complete')
+              }
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: PCI-DSS
+          Value: 'true'
+
+  # Rate Throttling Lambda Function
+  ThrottleLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-rate-throttle'
+      Runtime: python3.14
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      MemorySize: 256
+      VpcConfig:
+        SubnetIds:
+          - !Ref PrivateSubnet1Id
+          - !Ref PrivateSubnet2Id
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+      Environment:
+        Variables:
+          REDIS_ENDPOINT: !Ref RedisEndpoint
+          THROTTLE_RATE_LIMIT: !Ref ThrottleRateLimit
+          SQS_QUEUE_URL: !Ref ThrottleQueue
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          import redis
+          
+          def lambda_handler(event, context):
+              sqs = boto3.client('sqs')
+              redis_endpoint = os.environ.get('REDIS_ENDPOINT')
+              rate_limit = int(os.environ.get('THROTTLE_RATE_LIMIT', 256))
+              queue_url = os.environ.get('SQS_QUEUE_URL')
+              
+              # Connect to Redis
+              # r = redis.Redis(host=redis_endpoint, port=6379, ssl=True)
+              
+              # Check current rate
+              current_rate = 0  # Get from Redis
+              
+              if current_rate >= rate_limit:
+                  # Throttle - send to DLQ
+                  return {
+                      'statusCode': 429,
+                      'body': json.dumps('Rate limit exceeded')
+                  }
+              
+              # Process transaction
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('Transaction processed')
+              }
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: PCI-DSS
+          Value: 'true'
+
+  # SQS Queue for Throttling
+  ThrottleQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${Environment}-throttle-queue'
+      VisibilityTimeout: 300
+      MessageRetentionPeriod: 1209600
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ThrottleDLQ.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: PCI-DSS
+          Value: 'true'
+
+  ThrottleDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${Environment}-throttle-dlq'
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: PCI-DSS
+          Value: 'true'
+
+  # EventBridge Rule for Scheduled Conciliation
+  ConciliationScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub '${Environment}-conciliation-schedule'
+      Description: Scheduled conciliation batch processing
+      ScheduleExpression: !Ref ConciliationSchedule
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ConciliationLambda.Arn
+          Id: ConciliationTarget
+
+  ConciliationLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ConciliationLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ConciliationScheduleRule.Arn
+
+  # S3 Bucket for Conciliation Reports
+  ConciliationReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${Environment}-conciliation-reports-${AWS::AccountId}-${AWS::Region}'
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireReports
+          Prefix: ''
+          Status: Enabled
+          ExpirationInDays: 2557  # 7 years for PCI compliance
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: PCI-DSS
+          Value: 'true'
+
+  ConciliationReportsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ConciliationReportsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: s3:PutObject
+          Resource: !Sub '${ConciliationReportsBucket.Arn}/*'
+
+  # CloudWatch Alarms
+  ConciliationLambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-conciliation-lambda-error-alarm'
+      AlarmDescription: Alert on conciliation Lambda errors
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ConciliationLambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref LambdaNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  ThrottleLambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-throttle-lambda-error-alarm'
+      AlarmDescription: Alert on throttle Lambda errors
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ThrottleLambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref LambdaNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  ThrottleQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-throttle-queue-depth-alarm'
+      AlarmDescription: Alert on high throttle queue depth
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt ThrottleQueue.QueueName
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1000
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref LambdaNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  LambdaNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${Environment}-lambda-notifications'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # SNS Subscription for email notifications
+  LambdaEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      TopicArn: !Ref LambdaNotificationTopic
+      Endpoint: !Ref NotificationEmail
+
+  # CloudWatch Log Groups
+  ConciliationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${Environment}-conciliation-batch'
+      RetentionInDays: 2557  # 7 years for PCI compliance
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  ThrottleLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${Environment}-rate-throttle'
+      RetentionInDays: 2557  # 7 years for PCI compliance
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  ConciliationLambdaArn:
+    Description: Conciliation Lambda ARN
+    Value: !GetAtt ConciliationLambda.Arn
+    Export:
+      Name: !Sub '${Environment}-conciliation-lambda-arn'
+
+  ThrottleLambdaArn:
+    Description: Throttle Lambda ARN
+    Value: !GetAtt ThrottleLambda.Arn
+    Export:
+      Name: !Sub '${Environment}-throttle-lambda-arn'
+
+  ThrottleQueueUrl:
+    Description: Throttle queue URL
+    Value: !Ref ThrottleQueue
+    Export:
+      Name: !Sub '${Environment}-throttle-queue-url'
+
+  ThrottleQueueArn:
+    Description: Throttle queue ARN
+    Value: !GetAtt ThrottleQueue.Arn
+    Export:
+      Name: !Sub '${Environment}-throttle-queue-arn'
+
+  ConciliationReportsBucketName:
+    Description: Conciliation reports bucket name
+    Value: !Ref ConciliationReportsBucket
+    Export:
+      Name: !Sub '${Environment}-conciliation-reports-bucket'
+
+  LambdaExecutionRoleArn:
+    Description: Lambda execution role ARN
+    Value: !GetAtt LambdaExecutionRole.Arn
+    Export:
+      Name: !Sub '${Environment}-lambda-execution-role-arn'

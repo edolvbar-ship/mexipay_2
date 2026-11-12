@@ -1,0 +1,284 @@
+.database-explorer {
+  padding: 0.5rem;
+}
+
+/* Table Data Cells */
+:host ::ng-deep .p-datatable-tbody > tr > td {
+  font-size: 0.875rem;
+  padding: 0.5rem;
+}
+
+/* Header styling */
+:host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+  background-color: var(--surface-100);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Striped rows */
+:host ::ng-deep .p-datatable-tbody > tr:nth-child(even) {
+  background-color: var(--surface-50);
+}
+
+/* Hover effect */
+:host ::ng-deep .p-datatable-tbody > tr:hover {
+  background-color: var(--surface-100) !important;
+}
+
+/* Selected row */
+:host ::ng-deep .p-datatable-tbody > tr.p-highlight {
+  background-color: var(--primary-50) !important;
+}
+
+/* Compact table */
+:host ::ng-deep .p-datatable.p-datatable-sm .p-datatable-tbody > tr > td {
+  padding: 0.5rem 0.75rem;
+}
+
+/* Toolbar compact */
+:host ::ng-deep .p-toolbar {
+  padding: 0.75rem;
+}
+
+/* Schema view styles */
+.schema-view .p-tabview .p-tabview-panels {
+  padding: 1rem 0;
+}
+
+/* Table browser sidebar */
+.table-browser {
+  background-color: var(--surface-card);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--surface-200);
+}
+
+.table-browser .p-tree {
+  border: none;
+  padding: 0;
+}
+
+/* Stats panel */
+.stats-panel {
+  background-color: var(--surface-card);
+}
+
+/* Relationship badges */
+.relationship-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.relationship-badge.has-refs {
+  background-color: var(--yellow-100);
+  color: var(--yellow-900);
+}
+
+.relationship-badge.no-refs {
+  background-color: var(--gray-100);
+  color: var(--gray-600);
+}
+
+/* Filter panel */
+.filter-panel {
+  background-color: var(--surface-50);
+  border-radius: var(--border-radius);
+}
+
+/* Cell content truncation */
+.cell-content {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-content:hover {
+  overflow: visible;
+  white-space: normal;
+  word-break: break-all;
+  background-color: var(--surface-100);
+  position: relative;
+  z-index: 10;
+  padding: 0.25rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Primary key indicator */
+.pk-indicator {
+  color: var(--primary-color);
+  font-size: 0.75rem;
+  margin-left: 0.25rem;
+}
+
+/* Data type tags */
+:host ::ng-deep .p-tag {
+  font-size: 0.75rem;
+}
+
+/* Row count badge */
+.row-count {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--surface-200);
+  color: var(--text-color);
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--text-color-secondary);
+}
+
+/* Column visibility dropdown */
+.column-visibility-dropdown {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Dialog sizes */
+.record-editor-dialog {
+  width: 800px;
+  max-width: 95vw;
+}
+
+.schema-dialog {
+  width: 900px;
+  max-width: 95vw;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .database-explorer {
+    padding: 0.25rem;
+  }
+  
+  :host ::ng-deep .p-toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  :host ::ng-deep .p-toolbar .p-toolbar-group-start,
+  :host ::ng-deep .p-toolbar .p-toolbar-group-end {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .record-editor-dialog,
+  .schema-dialog {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* Scrollbar styling */
+:host ::ng-deep ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+:host ::ng-deep ::-webkit-scrollbar-track {
+  background: var(--surface-100);
+  border-radius: 4px;
+}
+
+:host ::ng-deep ::-webkit-scrollbar-thumb {
+  background: var(--surface-400);
+  border-radius: 4px;
+}
+
+:host ::ng-deep ::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-500);
+}
+
+/* Tree node styling for table browser */
+:host ::ng-deep .p-tree .p-treenode-content {
+  padding: 0.25rem;
+}
+
+:host ::ng-deep .p-tree .p-tree-toggler {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Highlight matching search results */
+.highlight-match {
+  background-color: var(--yellow-200);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+/* Batch operation buttons */
+.batch-actions {
+  background-color: var(--surface-100);
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
+}
+
+/* Record form styling */
+.record-form .form-field {
+  margin-bottom: 1rem;
+}
+
+.record-form label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.record-form .field-hint {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+  margin-top: 0.25rem;
+}
+
+/* Related data dropdown */
+.related-data-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background-color: var(--surface-50);
+  border-radius: var(--border-radius);
+  margin-top: 0.5rem;
+}
+
+/* SQL query display */
+.sql-query-display {
+  background-color: var(--surface-900);
+  color: var(--surface-0);
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

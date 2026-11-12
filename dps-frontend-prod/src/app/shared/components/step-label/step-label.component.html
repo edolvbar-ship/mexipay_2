@@ -1,0 +1,16 @@
+<div class="flex justify-center items-center"> 
+    <div class="size-9 rounded-full flex items-center justify-center"
+        [ngClass]="{
+            'bg-gradient-to-b from-primary to-blue': status == 'default',
+            'bg-gray': status == 'disabled',
+            'bg-green': status == 'success',
+            'bg-red': status == 'error'
+            }"
+    > 
+        <text-title *ngIf="!['success', 'error'].includes(status)" [text]="step" size="xsmall" variant="tertiary"> </text-title>
+        <i *ngIf="'success' == status" class="pi pi-check" style="font-weight: bolder;"></i>
+        <i *ngIf="'error' == status" class="pi pi-times" style="font-weight: bolder;"></i>
+    </div>
+    <text-title [text]="label" class="p-3" size="xsmall" [variant]="labelVariant">
+    </text-title>
+  </div>

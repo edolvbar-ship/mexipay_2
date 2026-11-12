@@ -1,0 +1,50 @@
+<div class="w-28 lg:w-64">
+  <ul>
+    <li *ngFor="let item of items" class="hover:bg-light-primary">
+      <ng-container *ngIf="item.type === 'section'; else normalLink">
+        <div class="px-8 py-2 text-gray  uppercase">
+          {{ item.linkText }}
+        </div>
+      </ng-container>
+      <ng-template #normalLink>
+        <ng-container *ngIf="item?.children && item.children && item.children.length > 0; else hasLink">
+          <button (click)="toggleChildren(item)" class="w-full flex justify-between items-center hover:bg-light-primary">
+            <sidebar-element
+              class="w-full"
+              [linkIcon]="item?.iconPath || ''"
+              [altText]="item?.altText || ''"
+              [linkText]="item?.linkText || ''">
+            </sidebar-element>
+            <ng-container *ngIf="item.children && item.children.length > 0">
+              <i 
+                class="mr-6 pi " 
+                [ngClass]="{ 'pi-angle-down': item?.isOpen, 'pi-angle-right': !item?.isOpen }"> </i>
+            </ng-container>
+          </button>
+        </ng-container>
+        <ng-template #hasLink>
+          <a [routerLink]="item?.linkUrl || null" [routerLinkActive]="item?.linkUrl ? 'bg-light-primary text-primary' : ''">
+            <sidebar-element
+              class="w-full"
+              [linkIcon]="item?.iconPath || ''"
+              [altText]="item?.altText || ''"
+              [linkText]="item?.linkText || ''">
+            </sidebar-element>
+          </a>
+        </ng-template>
+        <ul *ngIf="item?.children && item.children && item.isOpen">
+          <li *ngFor="let child of item.children" class="hover:bg-light-primary">
+            <a [routerLink]="child?.linkUrl || null" [routerLinkActive]="child?.linkUrl ? 'bg-light-primary text-primary' : ''">
+              <sidebar-element
+                class="w-full"
+                [linkIcon]="child?.iconPath || ''"
+                [altText]="child?.altText || ''"
+                [linkText]="child?.linkText || ''">
+              </sidebar-element>
+            </a>
+          </li>
+        </ul>
+      </ng-template>
+    </li>
+  </ul>
+</div>

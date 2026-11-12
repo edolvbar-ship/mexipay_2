@@ -1,0 +1,54 @@
+<section-title
+    title="Archivo"
+    subHead="Actualización masiva por fichero"
+    [canCreate]="true"
+    [textBtn]="'Regresar'"
+    [linkText]="['/tarjetas']"
+    [icon]="'UNDO'"
+    >
+</section-title>
+<card-container>
+    <text-title
+        text="Subir Archivo Nuevo"
+        class="text-bold m-12"
+        size="xsmall">
+    </text-title>
+    <div class="flex justify-between">
+        <div class="flex w-full">
+            <div class="flex border-[1px] border-light-gray rounded-full justify-between items-center w-11/12">
+                <span class="flex items-center mx-4 gap-3">
+                    <i class="pi pi-cloud-upload text-gray"></i>
+                    <span class="text-[13px] text-gray">
+                        {{ fileMessage }}
+                    </span>
+                </span>
+            <button type="button" class="bg-primary text-white rounded-full h-8 border-2 border-primary w-32"
+                (click)="openFileBrowser()" [disabled]="uploading"> Selecciona </button>
+            </div>
+
+            <input class="hidden" accept=".csv" type="file" id="file" name="file" #fileInput  (change)="onFileSelected($event)" >
+            <!-- <input class="hidden" type="file" id="file" name="file" #fileInput  (change)="onFileSelected($event)" > -->
+        </div>
+        <div class="flex justify-center">
+            
+                <button type="button"
+                    class="flex bg-primary text-white rounded-full h-8 border-2 border-primary w-32 justify-center"
+                    (click)="onUpload()" [disabled]="uploading"
+                    >
+                    <span class="flex items-center gap-2">
+                        <p class="flex">Guardar</p>
+                        <i class="pi pi-save"></i>
+                    </span>
+                </button>
+            
+        </div>
+    </div>
+    <div class="flex w-full justify-center flex-col font-bold pt-10" *ngIf="uploading">
+        <h2 class="flex justify-center text-2xl">
+            Subiendo archivo...
+        </h2>
+        <small class="flex justify-center ">
+            Este proceso puede llegar a demorar unos minutos.
+        </small>
+    </div>
+</card-container>

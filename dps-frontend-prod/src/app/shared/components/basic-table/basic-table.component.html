@@ -1,0 +1,123 @@
+<div class="overflow-x-auto relative">
+    <table class="min-w-full bg-white">
+        <thead class="h-20 bg-light-primary text-primary text-[17px] font-bold leading-snug capitalize">
+            <tr>
+                <th *ngIf="customActions.length > 0 && values.length > 0" class="px-4">Acciones</th>
+                <th *ngFor="let header of headers" class="px-4">
+                    {{ header }}
+                </th>
+                <th *ngIf="actions.length > 0 && values.length > 0" class="px-4 w-36">Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr *ngFor="let row of values | paginator:first:rows; let i = index" class="h-20 text-[15px]"
+                (click)="onRowClick(row)">
+                <td *ngIf="customActions.length > 0"
+                    class="px-4 py-2 border-b border-light-gray">
+                    <ng-template *ngIf="customActions.length > 1; then moreActions else oneAction"></ng-template>
+                    <ng-template #oneAction>
+                        <button type="button" (click)="customActions[0].handler(i, row)" class="w-full h-full p-2 flex items-center justify-center rounded  hover:bg-primary hover:text-white">
+                            <i [class]="customActions[0].icon"></i>
+                            <span *ngIf="customActions[0].label" class="ml-4">{{customActions[0].label}}</span>
+                        </button>
+                    </ng-template>
+                    <ng-template #moreActions>
+                        <button type="button" (click)="switchToggle(i, true)" class="w-full h-full  flex items-center justify-center">
+                            <i class="pi pi-ellipsis-v"></i>
+                        </button>
+                        <ng-container *ngIf="i === selectedRowIndex && toggleAction">
+                            <div class="relative">
+                                <div  class="absolute -bottom-4 bg-white shadow-lg w-28 rounded">
+                                    <button type="button" *ngFor="let action of customActions" (click)="action.handler(i, row)" class="w-full h-9 rounded-t hover:bg-primary hover:text-white flex items-center justify-center">
+                                        <i [class]="action.icon"></i>
+                                        <span *ngIf="action.label" class="ml-4">{{action.label}}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </ng-container>
+                    </ng-template>
+                </td>
+                <!-- Columnas dinámicas -->
+                <td *ngFor="let header of headers"
+                    class="px-4 py-2 border-b border-light-gray truncate whitespace-nowrap overflow-hidden">
+                    <ng-container *ngIf="isStatusCell(row[header])">
+                        <span class="flex items-center">
+                            <ng-container *ngIf="header !== 'Página Web'">
+                                <div [ngClass]="getStatusClass(row[header])" class="rounded-full size-3 mr-2"></div>
+                                {{ row[header] }}
+                            </ng-container>
+                            <ng-container *ngIf="header === 'Página Web'">
+                                <a [href]="getURL(row[header])" target="_blank" rel="noopener noreferrer"
+                                    class="text-primary hover:underline">
+                                    {{ row[header] }}
+                                </a>
+                            </ng-container>
+                        </span>
+                    </ng-container>
+                </td>
+
+                <!-- Acciones -->
+                <ng-container *ngFor="let action of actions">
+                    <td class="px-4 py-2 border-b border-light-gray">
+                        <button type="button">{{ action.label }}</button>
+
+                        <ng-container *ngIf="action.ico" class="flex">
+                            <!-- Botón simple -->
+                            <button type="button" *ngIf="!action.callbackEdit && !action.callbackDelet && !action.callbackView && !action.callback" (click)="switchToggle(i, true)"
+                                class="w-full h-full text-left text-gray action-pointer">
+                                <i [ngClass]="action.ico || 'pi pi-ellipsis-v'"></i>
+                            </button>
+
+                            <!-- Botón con menú -->
+                            <button type="button" *ngIf="action.callbackEdit || action.callbackDelet || action.callbackView || action.callback" (click)="switchViewToggle(i); debugToggleClick(i, row)"
+                                class="w-full h-full items-center justify-center text-gray action-pointer rounded-lg hover:text-white hover:bg-primary"
+                                [ngClass]="{
+                                'bg-primary text-white': i === selectedRowIndex && toggleAction,
+                                'text-gray hover:text-white hover:bg-primary': !(i === selectedRowIndex && toggleAction)}">
+                                <i [ngClass]="action.ico"></i>
+                            </button>
+
+                            <!-- Menú flotante -->
+                            <ng-container *ngIf="i === selectedRowIndex && toggleAction">
+                                <div class="relative">
+                                    <div
+                                        class="absolute right-0 -bottom-4 translate-x-4 bg-white shadow-lg w-36 rounded z-[1000]">
+                                        <button type="button" *ngIf="action.labelOne"
+                                            (click)="debugEditClick(row); action.callbackEdit(row)"
+                                            class="w-full h-9 rounded-t hover:bg-primary hover:text-white">
+                                            {{ action.labelOne }}
+                                        </button>
+                                        <button type="button" *ngIf="action.labelTwo"
+                                            (click)="debugDeleteClick(row); action.callbackDelet(row)"
+                                            class="w-full h-9 hover:bg-primary hover:text-white">
+                                            {{ action.labelTwo }}
+                                        </button>
+                                        <button type="button" *ngIf="action.labelThree"
+                                            (click)="debugViewClick(row); action.callbackView(row)"
+                                            class="w-full h-9 rounded-b hover:bg-primary hover:text-white">
+                                            {{ action.labelThree }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </ng-container>
+                        </ng-container>
+                    </td>
+                </ng-container>
+            </tr>
+
+            <!-- Totales -->
+            <tr class="font-bold" *ngIf="columnsWithSum.length">
+                <td *ngFor="let header of headers" class="text-left px-4 py-2 border-t">
+                    <ng-container *ngIf="columnsWithSum.includes(header); else emptyCell">
+                        <span class="text-red">
+                            {{ getTotal(header) | currency: '$' }}
+                        </span>
+                    </ng-container>
+                    <ng-template #emptyCell><span>-</span></ng-template>
+                </td>
+                <td *ngIf="actions.length > 0" class="px-4 py-2 border-t"></td>
+            </tr>
+        </tbody>
+    </table>
+</div>

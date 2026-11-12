@@ -1,0 +1,18 @@
+<section-title
+    title="Perfiles"
+    textBtn="Nuevo"
+    subHead="Perfiles registrados"
+    [linkText]="linkText"
+    [canCreate]="canCreate">
+</section-title>
+<card-container>
+    <table-layout 
+    [dataTable]="profiles"
+    [actions]="actions" 
+    [showActions]="true"
+    [filter]="true"/>
+</card-container>
+<modal-confirm
+    (accept)="handleReject()" 
+    (reject)="handleAccept()">
+</modal-confirm>

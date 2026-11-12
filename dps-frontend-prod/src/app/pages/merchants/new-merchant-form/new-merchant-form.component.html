@@ -1,0 +1,1208 @@
+<section-title
+  title="Comercios"
+  textBtn="Regresar"
+  subHead="Relación de comercios por banco adquirente"
+  [linkText]="linkText"
+  [canCreate]="true"
+  [icon]="'UNDO'"
+>
+</section-title>
+<form (submit)="$event.preventDefault()"  class="space-y-6 mb-6" [formGroup]="newMerchantForm" (ngSubmit)="onSubmit()">
+  <section>
+    <card-container class="">
+      <div class="h-5 mb-12 flex justify-between">
+                <span class="flex gap-4">
+                <div
+                  class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center"
+                >
+                    <text-title text="1" size="xsmall" variant="tertiary"> </text-title>
+                </div>
+                <text-title text="Datos del Comercio" size="xsmall" variant="secondary">
+                </text-title>
+                </span>
+        <div class="flex gap-8">
+          <app-input-switch
+            id="withInvoices"
+            label="¿Factura?"
+            formControlName="withInvoices"
+            size="lg"
+          ></app-input-switch>
+          <app-input-switch
+            id="status"
+            label="Comercio activo"
+            formControlName="active"
+            size="lg"
+          ></app-input-switch>
+        </div>
+      </div>
+
+      <div class="space-y-6 lg:space-y-12">
+        <!-- Grupo de inputs Nombre de cliente, nombre comercial y representante legal -->
+        <div class="grid gap-6 lg:gap-12 lg:grid-cols-3">
+          <app-input-select
+            class=""
+            label="Seleccion un cliente"
+            formControlName="id_cliente"
+            id="'clientName'"
+            label="Selecciona un cliente"
+            [options]="clientData"
+          ></app-input-select>
+          <app-input-text
+            class=""
+            formControlName="nombre_comercio"
+            id="comercialName"
+            label="Nombre Comercial"
+            [maxlength]="17"
+            allowedPattern="[a-zA-Z\s]"
+          >
+          </app-input-text>
+          <app-input-text
+            class=""
+            formControlName="representante"
+            id="legalRepresentative"
+            label="Representante"
+            [maxlength]="40"
+            allowedPattern="[^<>=]"
+          >
+          </app-input-text>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-4">
+          <!-- Grupo de inputs Tipo de Persona, Razón Social, RFC y URL -->
+          <app-input-select
+            id="personType"
+            class="md:col-span-2 lg:col-span-1"
+            label="Tipo de Persona"
+            formControlName="id_tipo_persona"
+            [options]="personType"
+          >
+          </app-input-select>
+          <app-input-text
+            id="'companyName'"
+            class="md:col-span-2 lg:col-span-1"
+            formControlName="razon_social"
+            label="Razón Social / Persona Física"
+            [maxlength]="400"
+          >
+          </app-input-text>
+
+          <app-input-text
+            id="RFC"
+            class="md:col-span-2 lg:col-span-1"
+            formControlName="rfc"
+            label="RFC"
+            [maxlength]="16"
+            upper
+          >
+          </app-input-text>
+          <app-input-text
+            id="'url'"
+            class="md:col-span-2 lg:col-span-1"
+            label="URL"
+            formControlName="url_comercio"
+          >
+          </app-input-text>
+        </div>
+
+        <div class="grid gap-6 grid-cols-2 lg:grid-cols-8"
+             formGroupName="direccion"
+        >
+          <!-- Grupo de inputs Calle, No Exterior, No Interior, Colonia y CP -->
+          <app-input-text
+            id="'street'"
+            label="Calle"
+            formControlName="calle"
+            class="col-span-2 md:col-span-2"
+            maxlength="40"
+          >
+          </app-input-text>
+          <app-input-text
+            id="'outerNumber'"
+            label="Nº Exterior"
+            formControlName="no_exterior"
+            class="col-span-1"
+            [maxlength]="10"
+          >
+          </app-input-text>
+          <app-input-text
+            id="'insideNumber'"
+            label="Nº Interior"
+            formControlName="no_interior"
+            class="col-span-1"
+            [maxlength]="10"
+          >
+          </app-input-text>
+          <app-input-text
+            id="'suburb'"
+            label="Colonia"
+            formControlName="colonia"
+            class="col-span-2"
+            maxlength="40"
+          >
+          </app-input-text>
+          <app-input-text
+            id="'zipCode'"
+            label="Código Postal"
+            formControlName="codigo_postal"
+            class="col-span-2"
+            [maxlength]="5"
+            allowedPattern="[0-9]"
+          >
+          </app-input-text>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-4"
+             formGroupName="direccion"
+        >
+          <!-- País, Estado, Ciudad, Municipio -->
+          <app-input-select
+            id="country"
+            class=""
+            label="País"
+            formControlName="id_pais"
+            [options]="countriesData"
+          >
+          </app-input-select>
+          <app-input-select
+            id="state"
+            class=""
+            label="Estado"
+            formControlName="id_estado"
+            [options]="statesData"
+          >
+          </app-input-select>
+          <app-input-text
+            id="city"
+            label="Ciudad"
+            formControlName="ciudad"
+            class=""
+            maxlength="40"
+          >
+          </app-input-text>
+          <app-input-text
+            id="town"
+            label="Alcaldía / Municipio"
+            formControlName="alcaldia"
+            class=""
+            maxlength="40"
+          >
+          </app-input-text>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-5">
+          <!-- Agente Comercial y Descripción -->
+          <app-input-textarea
+            id="'commercialAgent'"
+            label="Agente Comercial"
+            formControlName="agente_comercial"
+            class="lg:col-span-2"
+            maxlength="1000"
+          >
+          </app-input-textarea>
+          <app-input-textarea
+            id="'description'"
+            label="Descripción"
+            formControlName="descripcion"
+            class="lg:col-span-3"
+            [maxlength]="20000"
+          >
+          </app-input-textarea>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-5" >
+          <!-- Régimen fical -->
+          <app-input-select
+            id="taxRegimen"
+            class="lg:col-span-3"
+            label="Régimen Fiscal"
+            formControlName="taxRegimen"
+            [options]="taxRegimenData"
+          >
+          </app-input-select>
+          <div class="flex items-center justify-end lg:col-span-2">
+            <app-input-switch
+              formControlName="same_address"
+              id="sameAddresses"
+              label="¿Usar dirección física como dirección fiscal?"
+            ></app-input-switch>
+          </div>
+        </div>
+
+        <div *ngIf="!(newMerchantForm.get('same_address')?.value)" class="space-y-6 lg:space-y-12 pt-6">
+          <div>
+            <text-title text="Datos de dirección fiscal" size="xsmall" variant="secondary">
+            </text-title>
+          </div>
+          <div class="grid gap-6 grid-cols-2 lg:grid-cols-8" formGroupName="direccion_fiscal">
+            <!-- Grupo de inputs Calle, No Exterior, No Interior, Colonia y CP -->
+            <app-input-text
+              id="'street'"
+              label="Calle"
+              formControlName="calle"
+              class="col-span-2 md:col-span-2"
+              maxlength="40"
+            >
+            </app-input-text>
+            <app-input-text
+              id="'outerNumber'"
+              class="col-span-1"
+              label="Nº Exterior"
+              formControlName="no_exterior"
+              [maxlength]="10"
+            >
+            </app-input-text>
+            <app-input-text
+              id="'insideNumber'"
+              class="col-span-1"
+              label="Nº Interior"
+              formControlName="no_interior"
+              [maxlength]="10"
+            >
+            </app-input-text>
+            <app-input-text
+              id="'suburb'"
+              class="col-span-2"
+              label="Colonia"
+              formControlName="colonia"
+              maxlength="40"
+            >
+            </app-input-text>
+            <app-input-text
+              id="'zipCode'"
+              label="Código Postal"
+              formControlName="codigo_postal"
+              class="col-span-2"
+              [maxlength]="5"
+              allowedPattern="[0-9]"
+            >
+            </app-input-text>
+          </div>
+          <div class="grid gap-6 lg:grid-cols-4"
+               [formGroupName]="'direccion_fiscal'">
+            <!-- País, Estado, Ciudad, Municipio -->
+            <app-input-select
+              id="fiscal_country"
+              class=""
+              label="País"
+              formControlName="id_pais"
+              [options]="countriesData"
+            >
+            </app-input-select>
+            <app-input-select
+              id="fiscal_state"
+              class=""
+              label="Estado"
+              formControlName="id_estado"
+              [options]="statesData"
+            >
+            </app-input-select>
+            <app-input-text
+              id="fiscal_city"
+              class=""
+              label="Ciudad"
+              formControlName="ciudad"
+              maxlength="40"
+            >
+            </app-input-text>
+            <app-input-text
+              id="town"
+              class=""
+              label="Alcaldía / Municipio"
+              formControlName="alcaldia"
+              max="40"
+            >
+            </app-input-text>
+          </div>
+        </div>
+      </div>
+    </card-container>
+  </section>
+
+  <section>
+    <card-container class="">
+      <div class="h-5 mb-12">
+                <span class="flex gap-4">
+                <div
+                  class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center"
+                >
+                    <text-title text="2" size="xsmall" variant="tertiary"> </text-title>
+                </div>
+                <text-title text="Datos de Contacto" size="xsmall" variant="secondary">
+                </text-title>
+                </span>
+      </div>
+      <div class="space-y-6 lg:space-y-12">
+        <div class="grid grid gap-6 lg:gap-12 lg:grid-cols-3">
+          <!-- Grupo de inputs Nombre, Rol, Correo Electrónico -->
+          <app-input-text
+            id="name"
+            class=""
+            type="text"
+            label="Nombre"
+            formControlName="nombre_contacto"
+            allowedPattern="[^0-9<>=+-@:¬$%&/()~«^≠\\'\[\]{}]"
+          >
+          </app-input-text>
+          <app-input-text
+            id="roll"
+            class=""
+            type="text"
+            label="Rol"
+            formControlName="rol_contacto"
+            allowedPattern="[^<>=]"
+          >
+          </app-input-text>
+          <app-input-text
+            id="'email'"
+            class=""
+            label="Correo Electrónico"
+            formControlName="email_contacto"
+          >
+          </app-input-text>
+        </div>
+
+        <div class="grid grid gap-6 lg:gap-12 lg:grid-cols-3">
+          <!-- Grupo de inputs Teléfono Principal, Teléfono Alterno, Celular -->
+          <app-input-text
+            id="mainPhone"
+            label="Teléfono Principal"
+            formControlName="tel1_contacto"
+            mask="(000) 000-0000*"
+            [maxlength]="15"
+          >
+          </app-input-text>
+          <app-input-text
+            id="alternatePhone"
+            label="Teléfono Alterno"
+            formControlName="tel2_contacto"
+            mask="(000) 000-0000*"
+            [maxlength]="15"
+          >
+          </app-input-text>
+          <app-input-text
+            id="'movilePhone'"
+            label="Celular"
+            formControlName="celular"
+            mask="(000) 000-0000*"
+            [maxlength]="15"
+          >
+          </app-input-text>
+        </div>
+      </div>
+    </card-container>
+  </section>
+
+  <section>
+    <card-container class="">
+      <div class="h-5 mb-12">
+                <span class="flex gap-4">
+                <div
+                  class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center"
+                >
+                    <text-title text="3" size="xsmall" variant="tertiary"> </text-title>
+                </div>
+                <text-title text="Datos de Operación" size="xsmall" variant="secondary">
+                </text-title>
+                </span>
+      </div>
+      <div class="space-y-6 lg:space-y-12">
+        <div class="grid gap-6 md:grid-cols-4">
+          <!-- Grupo de inputs Nombre, Rol, Correo Electrónico -->
+          <app-input-select
+            id="transactionalSchema"
+            class="md:col-span-2 lg:col-span-1"
+            label="Esquema Transaccional"
+            formControlName="id_esquema_transaccional"
+            [options]="transSchemas"
+            (ngModelChange)="schemaTransactionalChange($event)"
+          >
+          </app-input-select>
+          <app-input-text
+            id="affiliationNumber"
+            class="md:col-span-2 lg:col-span-1"
+            label="Nº de Afiliación"
+            formControlName="numero_afilacion"
+            allowedPattern="[0-9]"
+            [maxlength]="10"
+          >
+          </app-input-text>
+          <app-input-text
+            id="'subaffiliationNumber'"
+            class="md:col-span-2 lg:col-span-1"
+            label="Nº de Subafiliación"
+            formControlName="numero_subafiliacion"
+            allowedPattern="[0-9]"
+            [maxlength]="10"
+          >
+          </app-input-text>
+          <app-input-select
+            id="MCC"
+            class="md:col-span-2 lg:col-span-1"
+            label="Giro (MCC)"
+            formControlName="mcc"
+            [options]="mccData"
+          >
+          </app-input-select>
+
+          <!-- MCC Operations Display -->
+          <div *ngIf="mccOperations.length > 0" class="col-span-full mt-2 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <h4 class="text-sm font-semibold text-blue-800 mb-2">Operaciones disponibles por MCC (Nueva arquitectura)</h4>
+            <div class="flex flex-wrap gap-2">
+              <span *ngFor="let op of mccOperations" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span class="material-icons text-[14px] mr-1" *ngIf="op.icon_name">{{op.icon_name}}</span>
+                {{op.name}}
+                <span class="ml-1 text-[10px] opacity-75" *ngIf="op.requires_tip">(Con Propina)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-4">
+          <!-- Grupo de inputs Banco Adquiriente, Red Lógica, Nombre del Agregador, Procesador  -->
+          <app-input-select
+            id="acquiererBank"
+            class="md:col-span-2 lg:col-span-1"
+            label="Banco Adquirente"
+            formControlName="acqbank"
+            [options]="acqBankData"
+          >
+          </app-input-select>
+          <app-input-select
+            id="logicalName"
+            class="md:col-span-2 lg:col-span-1"
+            label="Red Lógica"
+            formControlName="id_red_logica"
+            [options]="logicalNtwData"
+          >
+          </app-input-select>
+          <app-input-select
+            id="aggregator"
+            class="md:col-span-2 lg:col-span-1"
+            label="Nombre del Agregador"
+            formControlName="ln_agregador"
+            [options]="aggregatorName"
+            [maxlength]="7"
+          >
+          </app-input-select>
+          <app-input-select
+            id="processor"
+            class="md:col-span-2 lg:col-span-1"
+            label="Procesador"
+            formControlName="id_procesador"
+            [options]="processorData"
+            (ngModelChange)="processorChange($event)"
+          >
+          </app-input-select>
+        </div>
+
+        <div class="grid gap-6 lg:gap-12 lg:grid-cols-3">
+          <!-- Grupo de ID medio, modo transacciónal y URL Destino -->
+          <app-input-text
+            id="''"
+            label="ID Medio"
+            formControlName="id_medio"
+            [maxlength]="45"
+            class=""
+          >
+          </app-input-text>
+
+          <app-input-select
+            id="'transaction_mode'"
+            label="Modo de Transacción"
+            formControlName="transaction_mode"
+            [options]="transactionModeData"
+          >
+          </app-input-select>
+          <app-input-select
+            id="'urlTarget'"
+            class=""
+            label="URL Destino"
+            formControlName="url_dest"
+            [options]="urlTargetData"
+          >
+          </app-input-select>
+
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-4">
+          <!-- Grupo de Perfil Transaccional, Serie Terminal, Monto Transacción Mínima, Monto Transacción Máxima -->
+
+          <app-input-select
+            id="tranProfile"
+            class="md:col-span-2 lg:col-span-1"
+            label="Perfil Transaccional"
+            formControlName="id_perfil_transaccional"
+            [options]="profileTransData"
+          >
+          </app-input-select>
+
+          <!-- Profile Details Display -->
+          <div *ngIf="selectedProfileOperations" class="col-span-full mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 class="text-sm font-semibold text-gray-800 mb-2">Detalle Perfil Transaccional (Legacy)</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <span class="text-xs font-bold text-gray-500 block uppercase">Aplicación:</span>
+                <span class="text-sm">{{selectedProfileOperations.aplicacion}}</span>
+              </div>
+              <div>
+                <span class="text-xs font-bold text-gray-500 block uppercase">Transacciones:</span>
+                <div class="flex flex-wrap gap-1 mt-1">
+                  <span *ngFor="let t of selectedProfileOperations.trans" class="inline-block px-2 py-0.5 bg-green-100 text-green-800 text-[10px] rounded">{{t}}</span>
+                </div>
+              </div>
+              <div>
+                <span class="text-xs font-bold text-gray-500 block uppercase">Indicadores:</span>
+                <div class="flex flex-wrap gap-1 mt-1">
+                  <span *ngFor="let i of selectedProfileOperations.indicadores" class="inline-block px-2 py-0.5 bg-yellow-100 text-yellow-800 text-[10px] rounded">{{i}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <app-input-text
+            id="serie_terminal"
+            class="md:col-span-2 lg:col-span-1"
+            label="Serie Terminal"
+            formControlName="serie_terminal"
+            maxlength="20"
+          >
+          </app-input-text>
+
+          <app-input-text
+            id="min_tx"
+            class="md:col-span-2 lg:col-span-1"
+            label="Monto Transacción Mínima"
+            formControlName="min_tx"
+            mask="separator.2"
+            maxlength="11"
+            prefix="$"
+            placeholder="$"
+          >
+          </app-input-text>
+          <app-input-text
+            id="max_tx"
+            class="md:col-span-2 lg:col-span-1"
+            label="Monto Transacción Máxima"
+            formControlName="max_tx"
+            mask="separator.2"
+            maxlength="11"
+            prefix="$"
+            placeholder="$"
+          >
+          </app-input-text>
+        </div>
+
+        <!-- ADDED SELIA_ID FIELD -->
+        <div class="grid gap-6 md:grid-cols-4">
+          <!-- Grupo de Selia ID, 3DS Key, Afiliación Link de Pago, ID Medio Link de Pago -->
+          <app-input-text
+            id="selia_id"
+            class="md:col-span-2 lg:col-span-1"
+            label="Selia ID"
+            formControlName="selia_id"
+            type="number"
+            [maxlength]="10"
+            placeholder="Enter Selia ID"
+          >
+          </app-input-text>
+
+          <div class="flex items-center col-span-4 lg:col-span-2">
+            <app-input-switch
+              class="mr-4"
+              formControlName="3DS"
+              label="3DS?"
+              (ngModelChange)="has3DSChange($event)"
+            ></app-input-switch>
+            <app-input-text
+              id="key3ds"
+              class="grow"
+              label="3DS Key"
+              formControlName="3DS_KEY"
+              [maxlength]="5000"
+            >
+            </app-input-text>
+          </div>
+
+          <app-input-text
+            id="afiliation_link"
+            class="md:col-span-2 lg:col-span-1"
+            label="Afiliación Link de Pago"
+            formControlName="afiliation_link"
+          >
+          </app-input-text>
+          <app-input-text
+            id="id_medio_link"
+            class="md:col-span-2 lg:col-span-1"
+            label="ID Medio Link de Pago"
+            formControlName="id_medio_link"
+            [maxlength]="50"
+          >
+          </app-input-text>
+        </div>
+
+        <div *ngIf="showWhitelableBroxel" class="space-y-6 lg:space-y-12 pt-6" formGroupName="processor_info">
+          <div class="mt-6">
+            <text-title text="Datos Para Procesador Marca Blanca Broxel" size="xsmall" variant="secondary">
+            </text-title>
+          </div>
+          <div class="grid gap-6 lg:gap-12 lg:grid-cols-3" formGroupName="whitelabel_broxel">
+            <!-- Grupo de inputs Visa, Mastercard, Amex -->
+            <app-input-text
+              id="whitelabel-tkr"
+              class=""
+              label="Token de Registro"
+              formControlName="tkr"
+            >
+            </app-input-text>
+            <app-input-text
+              id="whitelabel-merchant"
+              class=""
+              label="Nombre de Comercio"
+              formControlName="merchant"
+            >
+            </app-input-text>
+          </div>
+        </div>
+
+        <div class="space-y-6 lg:space-y-12 pt-6">
+          <div class="mt-6">
+            <text-title text="Identificador de Facilitador de Pagos" size="xsmall" variant="secondary">
+            </text-title>
+          </div>
+          <div class="grid gap-6 lg:gap-12 lg:grid-cols-3">
+            <!-- Grupo de inputs Visa, Mastercard, Amex -->
+            <app-input-text
+              id="visa_payment_facilitator_id"
+              class=""
+              label="Visa"
+              formControlName="visa_payment_facilitator_id"
+              [maxlength]="11"
+              allowedPattern="[0-9]"
+            >
+            </app-input-text>
+            <app-input-text
+              id="mc_payment_facilitator_id"
+              class=""
+              label="Mastercard"
+              formControlName="mc_payment_facilitator_id"
+              [maxlength]="11"
+              allowedPattern="[0-9]"
+            >
+            </app-input-text>
+            <app-input-text
+              id="amex_payment_facilitator_id"
+              class=""
+              label="Amex"
+              formControlName="amex_payment_facilitator_id"
+              [maxlength]="11"
+              allowedPattern="[0-9]"
+            >
+            </app-input-text>
+          </div>
+        </div>
+
+        <div class="space-y-6 lg:space-y-12 pt-6">
+          <div>
+            <text-title text="Identificador de Organización de Ventas Independiente" size="xsmall" variant="secondary">
+            </text-title>
+          </div>
+          <div class="grid gap-6 lg:gap-12 lg:grid-cols-3">
+            <!-- Grupo de inputs Visa, Mastercard -->
+            <app-input-text
+              id="visa_independent_sales_organization_id"
+              label="Visa"
+              formControlName="visa_independent_sales_organization_id"
+              [maxlength]="11"
+              allowedPattern="[0-9]"
+            >
+            </app-input-text>
+            <app-input-text
+              id="mc_independent_sales_organization_id"
+              label="Mastercard"
+              formControlName="mc_independent_sales_organization_id"
+              [maxlength]="11"
+              allowedPattern="[0-9]"
+            >
+            </app-input-text>
+
+          </div>
+        </div>
+      </div>
+    </card-container>
+  </section>
+
+  <section>
+    <card-container class="">
+      <div class="h-5 mb-12">
+                <span class="flex gap-4">
+                <div
+                  class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center"
+                >
+                    <text-title text="4" size="xsmall" variant="tertiary"> </text-title>
+                </div>
+                <text-title text="Datos Bancarios" size="xsmall" variant="secondary">
+                </text-title>
+                </span>
+      </div>
+      <div class="space-y-6 lg:space-y-12">
+        <div class="grid gap-6 lg:grid-cols-4" formGroupName="datos_bancarios">
+
+          <app-input-text
+            id="bankName"
+            class="md:col-span-2 lg:col-span-1"
+            label="Banco"
+            formControlName="banco"
+            [maxlength]="10"
+          >
+          </app-input-text>
+          <app-input-text
+            id="cardNumber"
+            class="md:col-span-2 lg:col-span-1"
+            label="Tarjeta"
+            formControlName="tarjeta"
+            mask="XXXX XXXX XXXX 0000"
+          >
+          </app-input-text>
+          <app-input-text
+            id="account"
+            class="md:col-span-2 lg:col-span-1"
+            label="Nº de Cuenta"
+            formControlName="no_cuenta"
+            [maxlength]="21"
+            mask="00000XXXXXXXXXXX00000*"
+          >
+          </app-input-text>
+          <app-input-text
+            id="''"
+            class="md:col-span-2 lg:col-span-1"
+            label="Clabe Interbancaria"
+            formControlName="clabe"
+            [maxlength]="21"
+            mask="000 000 XXXXXXXX000 0"
+          >
+          </app-input-text>
+        </div>
+      </div>
+    </card-container>
+  </section>
+
+  <section>
+    <card-container class="">
+      <div class="h-5 mb-12">
+                <span class="flex gap-4">
+                <div
+                  class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center"
+                >
+                    <text-title text="5" size="xsmall" variant="tertiary"> </text-title>
+                </div>
+                <text-title text="Comisiones" size="xsmall" variant="secondary">
+                </text-title>
+                </span>
+      </div>
+      <div class="space-y-6 lg:space-y-12">
+        <div class="grid gap-6 lg:grid-cols-2 md:gap-x-36" formGroupName="tasas">
+
+          <div class="space-y-6 lg:space-y-12">
+            <div >
+              <text-title text="Tasa Banco" size="xsmall" variant="secondary">
+              </text-title>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-3" formGroupName="banco">
+              <app-input-text
+                id=""
+                label="Crédito"
+                formControlName="credito"
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Débito"
+                formControlName="debito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Internacional"
+                formControlName="amex"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+            </div>
+          </div>
+          <div class="space-y-6 pt-6 lg:pt-0 lg:space-y-12">
+            <div >
+              <text-title text="Tasa Agregador" size="xsmall" variant="secondary">
+              </text-title>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-3"
+                 [formGroupName]="'agregador'">
+              <app-input-text
+                id="''"
+                label="Crédito"
+                formControlName="credito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Débito"
+                formControlName="debito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Internacional"
+                formControlName="amex"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+            </div>
+          </div>
+        </div>
+        <div class="grid gap-6 lg:grid-cols-2 md:gap-x-36" >
+
+          <div formGroupName="tasas" class="space-y-6 lg:space-y-12 pt-6">
+            <div class="">
+              <text-title text="Tasa Reseller" size="xsmall" variant="secondary">
+              </text-title>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-3" formGroupName="comercio">
+              <app-input-text
+                id="tasa_comercio_credito"
+                label="Crédito"
+                formControlName="credito"
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+              <app-input-text
+                id="tasa_comercio_debito"
+                label="Débito"
+                formControlName="debito"
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+              <app-input-text
+                id="tasa_comercio_internacional"
+                label="Internacional"
+                formControlName="amex"
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+            </div>
+          </div>
+          <div formGroupName="comisiones" class="space-y-6 lg:space-y-12 pt-6">
+            <div class="">
+              <text-title text="Comisiones Antifraude" size="xsmall" variant="secondary">
+              </text-title>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-3">
+              <app-input-text
+                id="comision_credito"
+                formControlName="credito"
+                label="Crédito"
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+              <app-input-text
+                id="comision_debito"
+                formControlName="debito"
+                label="Débito"
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+              <app-input-text
+                id="comision_internacional"
+                formControlName="amex"
+                label="Internacional"
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+              >
+              </app-input-text>
+            </div>
+          </div>
+        </div>
+        <div class="grid gap-6 grid-cols-1 lg:grid-cols-3">
+          <app-input-text
+            id="retencion"
+            formControlName="retencion"
+            label="Retenciones en Garantía"
+            placeholder="%"
+            mask="percent.2"
+            suffix="%"
+            class="lg:col-span-2 w-full"
+            [maxlength]="10"
+          >
+          </app-input-text>
+        </div>
+        <div class="space-y-6 lg:space-y-12 pt-6" >
+          <div class="">
+            <text-title text="Meses Sin Intereses" size="xsmall" variant="secondary">
+            </text-title>
+          </div>
+          <!-- New MSI Config Component -->
+          <app-msi-config [idMerchant]="idMerchant || 0"></app-msi-config>
+        </div>
+      </div>
+    </card-container>
+  </section>
+
+  <section>
+    <card-container class="">
+      <div class="h-5 mb-12">
+                <span class="flex gap-4">
+                <div
+                  class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center"
+                >
+                    <text-title text="6" size="xsmall" variant="tertiary"> </text-title>
+                </div>
+                <text-title text="Comisiones Links de Pago" size="xsmall" variant="secondary" >
+                </text-title>
+                </span>
+      </div>
+      <div class="space-y-6 lg:space-y-12">
+        <div class="grid gap-6 lg:grid-cols-2 md:gap-x-36">
+
+          <div [formGroupName]="'tasasLinks'" class="space-y-6 lg:space-y-12">
+            <div class="">
+              <text-title text="Tasa Banco" size="xsmall" variant="secondary" >
+              </text-title>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-3" formGroupName="banco">
+              <app-input-text
+                id="''"
+                label="Crédito"
+                formControlName="credito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Débito"
+                formControlName="debito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Internacional"
+                formControlName="amex"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+            </div>
+          </div>
+          <div [formGroupName]="'tasasLinks'" class="space-y-6 lg:space-y-12">
+            <div class="">
+              <text-title text="Tasa Agregador" size="xsmall" variant="secondary" >
+              </text-title>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-3" formGroupName="agregador">
+              <app-input-text
+                id="''"
+                label="Crédito"
+                formControlName="credito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Débito"
+                formControlName="debito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Internacional"
+                formControlName="amex"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+            </div>
+          </div>
+        </div>
+        <div class="grid gap-6 lg:grid-cols-2 md:gap-x-36" >
+
+          <div formGroupName="tasasLinks" class="space-y-6 lg:space-y-12">
+            <div>
+              <text-title text="Tasa Comercio" size="xsmall" variant="secondary">
+              </text-title>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-3" formGroupName="comercio">
+              <app-input-text
+                id="''"
+                label="Crédito"
+                formControlName="credito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Débito"
+                formControlName="debito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Internacional"
+                formControlName="amex"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+            </div>
+          </div>
+          <div class="space-y-6 lg:space-y-12">
+            <div class="">
+              <text-title text="Comisiones Antifraude" size="xsmall" variant="secondary" >
+              </text-title>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-3" formGroupName="comisionesLink">
+              <app-input-text
+                id="''"
+                label="Crédito"
+                formControlName="credito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Débito"
+                formControlName="debito"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+              <app-input-text
+                id="''"
+                label="Internacional"
+                formControlName="amex"
+
+                placeholder="%"
+                mask="percent.2"
+                suffix="%"
+                class=""
+                [maxlength]="10"
+              >
+              </app-input-text>
+            </div>
+          </div>
+        </div>
+      </div>
+    </card-container>
+  </section>
+</form>
+<div class="flex justify-end gap-6">
+
+  <button
+    (click)="resetForm()"
+    type="reset"
+    class="flex items-center justify-center h-8 rounded-full min-w-32 px-4 font-medium text-[15px] border-[1px] border-light-gray">
+    <text-type
+      [text]="'Limpiar'"
+      size="small">
+    </text-type>
+  </button>
+  <action-button
+    [linkIcon]="'SAVE'"
+    (click)="onSubmit()"
+    [text]="'Guardar'"
+  ></action-button>
+</div>

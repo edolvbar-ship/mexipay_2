@@ -1,0 +1,22 @@
+@import '../../../../colors.css';
+
+::ng-deep .p-inputnumber {
+    width: 100%; /* Asegura que el contenedor tenga ancho 100% */
+  }
+
+::ng-deep .p-inputnumber-input {
+    border-bottom: 1px solid var(--light-gray);
+    background-color: var(--white);
+    font-size: 15px;
+    color: var(--black);
+    display: flex;
+    width: 100%;
+    padding: 0.5rem;
+    box-sizing: border-box;
+}
+
+
+::ng-deep .p-inputnumber-input:focus {
+    border-color:#0C4772; 
+    outline: none;
+}

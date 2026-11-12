@@ -1,0 +1,47 @@
+<section-title
+    [title]="sectionTitle"
+    textBtn="Regresar"
+    [linkText]="linkText"
+    [canCreate]="true"
+    [icon]="'UNDO'"
+    >
+</section-title>
+<card-container class="grid w-full">
+    <div class="mb-6 flex items-center justify-between">
+        <text-title text="Información de Giro (MCC)" size="xsmall" variant="secondary">
+        </text-title>
+        <div>
+            
+        </div>
+    </div>
+    <form (submit)="$event.preventDefault()" action="" class="grid md:grid-cols-6 gap-x-24" [formGroup]="formGroup">
+        <div class="col-span-2">
+            <app-input-text
+                id="mcc"
+                label="Nombre del giro (MCC):"
+                [maxlength]="45"
+                [formControlName]="'mcc'"
+            >
+            </app-input-text>
+        </div>
+
+        <div class="col-span-4">
+            <app-input-text
+                id="description"
+                label="Descripción:"
+                [maxlength]="100"
+                [formControlName]="'description'"
+            >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-6 flex justify-end">
+            <action-button
+                (click)="saveForm()"
+                class="mt-6"
+                text="Guardar"
+                [linkIcon]="'SAVE'">
+            </action-button>
+        </div>
+    </form>
+</card-container>

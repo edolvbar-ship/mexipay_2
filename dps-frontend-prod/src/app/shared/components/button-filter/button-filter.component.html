@@ -1,0 +1,19 @@
+<form (submit)="$event.preventDefault()">
+    <div class="static">
+        <action-button [text]="'Filtros'" [variant]="'secondary'" (click)="switchList()"
+        [isActive]="isVisible" [linkIcon]="'SLIDERS_H'">
+        </action-button>
+    </div>
+
+    <div *ngIf="isVisible"
+        class="grid grid-cols-2 gap-4 w-80 rounded-lg shadow-lg m-4 p-4 shadow-light-primary absolute bg-white start-auto right-10 z-50">
+        <div formArrayName="options" class="col-span-2">
+            <div class="grid grid-cols-2 gap-4">
+                <div *ngFor="let item of dataList; let i = index" class="capitalize">
+                    <input type="checkbox" [checked]="checkboxes[i]" (change)="toggleCheckbox(i)" class="form-checkbox size-3 text-primary" />
+                    <label class="ml-2">{{ item }}</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

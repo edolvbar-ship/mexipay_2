@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <mate charest="utf-8" />
+    <title>Ticket</title>
+    <style>
+      body {
+      background: #EEE;
+      font-family: sans-serif;
+      font-size: 12px;
+      margin: 3em;
+      padding: 0;
+    }
+    .monto{
+      text-align: right;
+    }
+    #register {
+      width: 20em;
+      margin: auto;
+    }
+    #ticket {
+      background: white;
+      margin: 0 1em;
+      padding: 1em;
+      box-shadow: 0 0 5px rgba(0,0,0,.25);
+    }
+    #ticket h1 {
+      text-align: center;
+    }
+    #ticket table {
+      font-family: monospace;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #ticket td, #ticket th {
+      padding: 5px;
+    }
+    #ticket th {
+      text-align: left;
+    }
+    #ticket td, #ticket #total, .total {
+      text-align: right;
+    }
+    #ticket tfoot th {
+      border-top: 1px solid black;
+    }
+    
+    #entry {
+      background: #333;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,.25);
+    }
+    #entry input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid black;
+      text-align: right;
+      font-family: sans-serif;
+      font-size: 20px;
+      box-shadow: inset 0 0 3px rgba(0,0,0,.5);
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+    }
+    #entry input:focus {
+      outline: none;
+      border-color: rgba(255,255,255,.75);
+    }
+    .tkt-head{
+      font-size: xx-small;
+      font-weight: lighter;
+    }
+
+    .upper-case{
+      text-transform: uppercase;
+    }
+    .ta-r{
+      text-align: left;
+    }
+    .ta-l{ text-align: right;
+      position: relative;
+      top: -13px;
+    }
+    
+    .line{
+    width: 100%;
+    height: 40px;
+    border-bottom: 1px solid black;
+    }
+    
+    p { 
+      font-size: 9px;
+      width:100%; text-align:left; border-bottom: 1px solid #000; line-height:0.1em; margin:10px 0 20px; } 
+    p span { background:#fff; }
+    .bolded { font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <div id="register">
+      <div id="ticket">
+        <!-- <h1>Ticket</h1> iso_issuer_bank -->
+
+        {{#if base64Image }}
+          <div style="text-align: center;">
+            <img width="auto" height="40px" alt="" src="{{ base64Image }}">
+          </div>
+        {{/if}}
+
+        <div style="text-align: center;">
+          <div class="tkt-head upper-case">{{appName}}</div>
+          <br>
+          <div class="tkt-head bolded">{{data.more_info.merchant_data.name_merchant}}</div>
+          <br>
+          <div class="tkt-head">{{data.direccion}}</div>
+          <br>
+          <div class="tkt-head">Banco Adquirente: {{data.merchant_por_id.banco_adq.name}}</div>
+          <div class="tkt-head">Afiliación: {{data.merchant_por_id.afiliation_number}}</div>
+          <br>
+          <div class="tkt-head bolded">************ {{data.last4}}</div>
+          <br>
+          
+          <div class="tkt-head">Folio: {{data.folio}}</div>
+          
+          
+          <br>
+
+          <div class="tkt-head">{{data.rejectedBy}}</div>
+          
+          <br>
+          
+        </div>
+       
+        <br>
+        <div class="row">
+          <div class="col-12">
+            <div class="tkt-head ta-r">Fecha: {{data.F1}}</div>
+          <div class="tkt-head ta-l">Hora: {{data.F2}}</div>
+          </div>
+        </div>
+
+        <br>
+        <div class="row" style="text-align: center;">
+          <div class="col-12 tkt-head">
+            TÉRMINOS Y CONDICIONES
+          </div>
+          <div class="col-12 tkt-head" >
+              {{ termConditionUrl }}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

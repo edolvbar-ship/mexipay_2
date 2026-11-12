@@ -1,0 +1,16 @@
+<section-title title="Links de pago"></section-title>
+<card-container>
+    <table-layout [customActions]="customActions" [dataTable]="linksTable" [hiddenColumns]="['link']" [filter]="true">
+        <div firstFIeld class="mr-8">
+            <app-calendar [rangeDates]="initialDates" (dateEmitted)="handleDates($event)"></app-calendar>
+        
+        </div>
+        <div secondFIeld class="ml-8"> 
+            <action-button
+                (click)="exportToExcel()"
+                [text]="'Exportar'"
+                [linkIcon]="'DOWNLOAD'"
+            ></action-button>
+        </div>
+    </table-layout>
+</card-container>

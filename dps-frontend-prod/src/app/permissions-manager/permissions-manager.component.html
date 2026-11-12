@@ -1,0 +1,577 @@
+<div class="permissions-manager">
+  <p-toast></p-toast>
+  
+  <div class="header-section">
+    <div class="header-content">
+      <div class="header-text">
+        <h1 class="text-2xl font-bold mb-6">
+          <i class="pi pi-shield"></i>
+          Permissions Management
+        </h1>
+        <p class="header-description">
+          Manage user roles, permissions, and access control across your application
+        </p>
+      </div>
+      <div class="header-actions">
+        <p-button 
+          label="Refresh Data"
+          icon="pi pi-refresh"
+          severity="secondary"
+          (click)="refreshAllData()">
+        </p-button>
+      </div>
+    </div>
+    
+    <!-- View Toggle Buttons -->
+    <div class="view-toggle mb-6">
+      <p-button 
+        label="Resource View"
+        [class]="'mr-2 ' + (currentView === 'resources' ? 'p-button-primary' : 'p-button-outlined')"
+        (click)="setView('resources')"
+        icon="pi pi-list">
+      </p-button>
+      <p-button 
+        label="Permission Matrix"
+        [class]="'mr-2 ' + (currentView === 'matrix' ? 'p-button-primary' : 'p-button-outlined')"
+        (click)="setView('matrix')"
+        icon="pi pi-table">
+      </p-button>
+      <p-button 
+        label="Roles/Profiles View"
+        [class]="'mr-2 ' + (currentView === 'profiles' ? 'p-button-primary' : 'p-button-outlined')"
+        (click)="setView('profiles')"
+        icon="pi pi-users">
+      </p-button>
+      <p-button 
+        label="Permission Dashboard"
+        [class]="'mr-2 ' + (currentView === 'dashboard' ? 'p-button-primary' : 'p-button-outlined')"
+        (click)="setView('dashboard')"
+        icon="pi pi-chart-bar">
+      </p-button>
+    </div>
+
+    <!-- Search Filter -->
+    <div class="search-container">
+      <div class="search-input-wrapper">
+        <i class="pi pi-search search-icon"></i>
+        <input 
+          type="text" 
+          pInputText 
+          id="search" 
+          (input)="onSearchChange($event)"
+          [value]="searchTerm"
+          placeholder="Search permissions..."
+          class="search-input">
+        <button 
+          *ngIf="searchTerm" 
+          type="button" 
+          pButton 
+          icon="pi pi-times"
+          class="p-button-text p-button-rounded clear-search-btn"
+          (click)="clearSearch()"
+          title="Clear search">
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESOURCE VIEW -->
+  <div *ngIf="currentView === 'resources'" class="resources-view">
+    <!-- Resource Management Form -->
+    <p-card [header]="selectedResource ? 'Edit Resource' : 'Register New Resource'" subheader="Create and manage API resources" class="mb-6">
+      <form [formGroup]="resourceForm" class="resource-form">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Resource Name *</label>
+            <input 
+              type="text" 
+              pInputText 
+              formControlName="resource_name" 
+              placeholder="e.g., User Management">
+            <small class="p-error" *ngIf="resourceForm.get('resource_name')?.invalid && resourceForm.get('resource_name')?.touched">
+              Resource name is required (min 3 characters)
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label>Resource URL *</label>
+            <input 
+              type="text" 
+              pInputText 
+              formControlName="resource_url" 
+              placeholder="e.g., /api/users">
+            <small class="text-muted">Format: /api/endpoint-path (must start with /)</small>
+            <small class="p-error" *ngIf="resourceForm.get('resource_url')?.invalid && resourceForm.get('resource_url')?.touched">
+              URL must start with / and contain only letters, numbers, /, _, or - (e.g., /api/users)
+            </small>
+          </div>
+
+          <div class="form-field" style="grid-column: 1 / -1;">
+            <label>Description</label>
+            <textarea 
+              pTextarea 
+              formControlName="description" 
+              rows="3"
+              placeholder="Optional description of the resource"></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <p-button 
+            [label]="selectedResource ? 'Update Resource' : 'Create Resource'"
+            severity="primary"
+            (click)="createOrUpdateResource()" 
+            [disabled]="!resourceForm.valid"
+            icon="pi pi-save">
+          </p-button>
+          <p-button 
+            label="Cancel"
+            severity="secondary"
+            (click)="resetResourceForm()"
+            icon="pi pi-times">
+          </p-button>
+        </div>
+      </form>
+    </p-card>
+
+    <!-- All Resources Table -->
+    <p-card header="All Resources" subheader="Manage existing API resources">
+      <p-table 
+        [value]="allResources" 
+        [paginator]="true" 
+        [rows]="10"
+        [loading]="loading"
+        responsiveLayout="scroll">
+        
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <th>ID</th>
+            <th>Resource Name</th>
+            <th>Resource URL</th>
+            <th>Description</th>
+            <th style="width: 120px; text-align: center;">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-resource>
+          <tr>
+            <td>{{resource.id}}</td>
+            <td>
+              <strong>{{resource.resource_name}}</strong>
+            </td>
+            <td>
+              <code>{{resource.resource_url}}</code>
+            </td>
+            <td>{{resource.description || '-'}}</td>
+            <td style="text-align: center;">
+              <p-button 
+                icon="pi pi-pencil" 
+                severity="secondary" 
+                size="small"
+                [style]="{'margin-right': '5px'}"
+                (click)="editResource(resource)"
+                tooltip="Edit Resource">
+              </p-button>
+              <p-button 
+                icon="pi pi-trash" 
+                severity="danger" 
+                size="small"
+                (click)="deleteResource(resource)"
+                tooltip="Delete Resource">
+              </p-button>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 2rem;">
+              <i class="pi pi-inbox" style="font-size: 2rem; color: #6b7280;"></i>
+              <p>No resources found. Create your first resource above.</p>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  </div>
+
+  <!-- MATRIX VIEW -->
+  <div *ngIf="currentView === 'matrix'" class="matrix-view">
+    <p-card header="Permission Matrix" subheader="Manage individual permissions" class="mb-6">
+      <!-- Bulk Actions -->
+      <div *ngIf="selectedPermissions.length > 0" class="bulk-actions mb-4 p-3">
+        <p-button 
+          label="Delete Selected ({{selectedPermissions.length}})"
+          severity="danger"
+          (click)="bulkDelete()"
+          icon="pi pi-trash">
+        </p-button>
+        <p-button 
+          label="Clear Selection"
+          severity="secondary"
+          (click)="selectedPermissions = []"
+          icon="pi pi-times">
+        </p-button>
+      </div>
+
+      <p-table 
+        [value]="filteredDataSource" 
+        [paginator]="true" 
+        [rows]="rows"
+        [first]="first"
+        [loading]="loading"
+        [globalFilterFields]="['profile_name', 'resource_name', 'allowed_methods']"
+        responsiveLayout="scroll">
+        
+        <!-- Selection Column -->
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <th style="width: 3rem">
+              <p-checkbox 
+                binary="true" 
+                [ngModel]="isAllSelected()"
+                (ngModelChange)="toggleAllSelection()">
+              </p-checkbox>
+            </th>
+            <th>ID</th>
+            <th>Profile Name</th>
+            <th>Resource (Route)</th>
+            <th>Allowed Methods</th>
+            <th>Create</th>
+            <th>Edit</th>
+            <th>Delete</th>
+            <th>Select</th>
+            <th>Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-permission>
+          <tr>
+            <td>
+              <p-checkbox 
+                binary="true" 
+                [ngModel]="isPermissionSelected(permission)"
+                (ngModelChange)="togglePermissionSelection(permission)">
+              </p-checkbox>
+            </td>
+            <td>{{permission.id}}</td>
+            <td>{{permission.profile_name || 'Profile ' + permission.id_profile}}</td>
+            <td>{{resourceLabelWithRoute(permission)}}</td>
+            <td>{{permission.allowed_methods || 'GET,POST'}}</td>
+            <td>
+              <span [class]="getPermissionClass('create', permission.create)">
+                {{getPermissionIcon('create', permission.create)}}
+              </span>
+            </td>
+            <td>
+              <span [class]="getPermissionClass('edit', permission.edit)">
+                {{getPermissionIcon('edit', permission.edit)}}
+              </span>
+            </td>
+            <td>
+              <span [class]="getPermissionClass('delete', permission.delete)">
+                {{getPermissionIcon('delete', permission.delete)}}
+              </span>
+            </td>
+            <td>
+              <span [class]="getPermissionClass('select', permission.select)">
+                {{getPermissionIcon('select', permission.select)}}
+              </span>
+            </td>
+            <td>
+              <p-button 
+                icon="pi pi-pencil" 
+                severity="secondary" 
+                size="small"
+                (click)="edit(permission)">
+              </p-button>
+              <p-button 
+                icon="pi pi-trash" 
+                severity="danger" 
+                size="small"
+                (click)="delete(permission.id)">
+              </p-button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+
+    <!-- Add/Edit Form -->
+    <p-card [header]="selected ? 'Edit Permission' : 'Add New Permission'">
+      <form [formGroup]="form" class="permission-form">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Profile</label>
+            <p-multiSelect 
+              [options]="profilesDataSource" 
+              [filter]="true"
+              optionLabel="profile_name" 
+              optionValue="id_profile"
+              formControlName="id_profile" 
+              placeholder="Select Profile">
+            </p-multiSelect>
+          </div>
+
+          <div class="form-field">
+            <label>Resource (Route)</label>
+            <p-multiSelect 
+              [options]="allResources" 
+              [filter]="true"
+              optionLabel="resourceLabelWithRoute" 
+              optionValue="id"
+              formControlName="id_resource" 
+              placeholder="Select Resource">
+            </p-multiSelect>
+            <p-button 
+              label="Add New Resource"
+              icon="pi pi-plus"
+              severity="secondary"
+              (click)="addNewResource()"
+              class="mt-2">
+            </p-button>
+          </div>
+
+          <div class="checkbox-group">
+            <label class="group-label">Permissions (auto-generates HTTP methods):</label>
+            <div class="checkbox-item">
+              <p-checkbox formControlName="create" binary="true" (onChange)="updateHttpMethods()"></p-checkbox>
+              <label>Create (POST)</label>
+            </div>
+            <div class="checkbox-item">
+              <p-checkbox formControlName="edit" binary="true" (onChange)="updateHttpMethods()"></p-checkbox>
+              <label>Edit (PUT/PATCH)</label>
+            </div>
+            <div class="checkbox-item">
+              <p-checkbox formControlName="delete" binary="true" (onChange)="updateHttpMethods()"></p-checkbox>
+              <label>Delete (DELETE)</label>
+            </div>
+            <div class="checkbox-item">
+              <p-checkbox formControlName="select" binary="true" (onChange)="updateHttpMethods()"></p-checkbox>
+              <label>Select (GET)</label>
+            </div>
+            <div class="methods-display" *ngIf="generatedMethods.length > 0">
+              <small><strong>Generated HTTP Methods:</strong> {{generatedMethods.join(', ')}}</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <p-button 
+            [label]="selected ? 'Update' : 'Create'"
+            severity="primary"
+            (click)="createOrUpdate()" 
+            [disabled]="!form.valid">
+          </p-button>
+          <p-button 
+            label="Cancel"
+            severity="secondary"
+            (click)="resetForm()">
+          </p-button>
+        </div>
+      </form>
+    </p-card>
+  </div>
+
+  <!-- PROFILES VIEW -->
+  <div *ngIf="currentView === 'profiles'" class="profiles-view">
+    <p-card header="Roles/Profiles with Permissions" subheader="View all profiles and their assigned permissions">
+      <p-table 
+        [value]="profilesDataSource" 
+        [paginator]="true" 
+        [rows]="rows"
+        [first]="first"
+        [loading]="loading"
+        responsiveLayout="scroll">
+        
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <th>Profile Name</th>
+            <th>Resource Count</th>
+            <th>Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-profile>
+          <tr>
+            <td>{{profile.profile_name}}</td>
+            <td>
+              <p-chip label="{{profile.resource_count}} resources" [removable]="false"></p-chip>
+            </td>
+            <td>
+              <p-button 
+                label="View Permissions"
+                severity="primary"
+                (click)="viewProfilePermissions(profile)">
+              </p-button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+
+    <!-- Profile Permissions Detail -->
+    <p-card *ngIf="selectedProfile" header="Permissions for {{selectedProfile.profile_name}}" class="mt-6">
+      <div class="permissions-grid">
+        <div class="permission-item" 
+             *ngFor="let permission of getProfilePermissions(selectedProfile.id_profile)">
+          <h4>{{resourceLabelWithRoute(permission)}}</h4>
+          <div class="permission-badges">
+            <p-chip [label]="'Create: ' + (permission.create ? 'Yes' : 'No')" 
+                     [style]="{ backgroundColor: permission.create ? '#10b981' : '#6b7280', color: 'white' }"></p-chip>
+            <p-chip [label]="'Edit: ' + (permission.edit ? 'Yes' : 'No')" 
+                     [style]="{ backgroundColor: permission.edit ? '#10b981' : '#6b7280', color: 'white' }"></p-chip>
+            <p-chip [label]="'Delete: ' + (permission.delete ? 'Yes' : 'No')" 
+                     [style]="{ backgroundColor: permission.delete ? '#10b981' : '#6b7280', color: 'white' }"></p-chip>
+            <p-chip [label]="'Select: ' + (permission.select ? 'Yes' : 'No')" 
+                     [style]="{ backgroundColor: permission.select ? '#10b981' : '#6b7280', color: 'white' }"></p-chip>
+          </div>
+          <p-button 
+            icon="pi pi-times-circle" 
+            severity="danger"
+            size="small"
+            (click)="removePermissionFromProfile(selectedProfile.id_profile, permission.id_resource)">
+          </p-button>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div *ngIf="currentView === 'dashboard'" class="dashboard-view">
+    <p-card header="Permission Dashboard" subheader="View which roles have access to each permission">
+      <!-- Dashboard Stats -->
+      <div class="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="pi pi-shield"></i>
+          </div>
+          <div class="stat-content">
+            <h3>{{permissionsDataSource.length}}</h3>
+            <p>Total Resources</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="pi pi-users"></i>
+          </div>
+          <div class="stat-content">
+            <h3>{{getTotalProfilesCount()}}</h3>
+            <p>Total Profiles</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="pi pi-check-circle"></i>
+          </div>
+          <div class="stat-content">
+            <h3>{{getTotalPermissionsCount()}}</h3>
+            <p>Total Permissions</p>
+          </div>
+        </div>
+      </div>
+
+      <p-table 
+        [value]="permissionsDataSource" 
+        [paginator]="true" 
+        [rows]="rows"
+        [first]="first"
+        [loading]="loading"
+        responsiveLayout="scroll"
+        [scrollable]="true"
+        scrollHeight="flex">
+        
+        <ng-template pTemplate="header" let-columns>
+          <tr>
+            <th style="width: 25%">Resource Name</th>
+            <th style="width: 30%">Resource URL</th>
+            <th style="width: 45%">Profiles with Access</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-resource>
+          <tr>
+            <td>
+              <div class="resource-info">
+                <div class="resource-icon">
+                  <i class="pi pi-file"></i>
+                </div>
+                <div class="resource-details">
+                  <strong>{{resourceLabelWithRoute(resource)}}</strong>
+                  <small>ID: {{resource.id_resource}}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="url-container">
+                <code class="resource-url">{{resource.resource_url}}</code>
+                <p-button 
+                  icon="pi pi-copy" 
+                  severity="secondary" 
+                  size="small"
+                  tooltip="Copy URL"
+                  tooltipPosition="top"
+                  (click)="copyToClipboard(resource.resource_url)">
+                </p-button>
+              </div>
+            </td>
+            <td>
+              <div class="profiles-container">
+                <div class="profiles-grid" *ngIf="resource.profiles_with_access && resource.profiles_with_access.length > 0">
+                  <div class="profile-card" 
+                       *ngFor="let profile of resource.profiles_with_access"
+                       [class.admin-profile]="profile.profile_name?.toLowerCase().includes('admin')">
+                    <div class="profile-header">
+                      <div class="profile-avatar">
+                        <i class="pi pi-user"></i>
+                      </div>
+                      <div class="profile-info">
+                        <strong>{{profile.profile_name}}</strong>
+                        <small>Profile ID: {{profile.id_profile}}</small>
+                      </div>
+                    </div>
+                    <div class="permissions-row">
+                      <div class="permission-indicators">
+                        <span class="indicator" 
+                              [class.active]="profile.create" 
+                              title="Create Access">
+                          <i class="pi pi-plus"></i>
+                        </span>
+                        <span class="indicator" 
+                              [class.active]="profile.edit" 
+                              title="Edit Access">
+                          <i class="pi pi-pencil"></i>
+                        </span>
+                        <span class="indicator" 
+                              [class.active]="profile.delete" 
+                              title="Delete Access">
+                          <i class="pi pi-trash"></i>
+                        </span>
+                        <span class="indicator" 
+                              [class.active]="profile.select" 
+                              title="Select Access">
+                          <i class="pi pi-eye"></i>
+                        </span>
+                      </div>
+                      <div class="methods-badge">
+                        <p-chip 
+                          [label]="profile.allowed_methods || 'GET,POST'" 
+                          [removable]="false"
+                          [style]="{ fontSize: '11px', padding: '2px 8px' }">
+                        </p-chip>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="no-profiles" *ngIf="!resource.profiles_with_access || resource.profiles_with_access.length === 0">
+                  <i class="pi pi-exclamation-triangle"></i>
+                  <span>No profiles have access to this resource</span>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  </div>
+</div>

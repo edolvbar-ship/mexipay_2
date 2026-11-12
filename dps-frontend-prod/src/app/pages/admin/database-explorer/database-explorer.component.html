@@ -1,0 +1,553 @@
+<div class="database-explorer">
+  <!-- Header Toolbar -->
+  <p-toolbar styleClass="mb-2">
+    <ng-template pTemplate="start">
+      <div class="flex align-items-center gap-2">
+        <p-button 
+          icon="pi pi-bars" 
+          (onClick)="sidebarVisible = !sidebarVisible"
+          pTooltip="{{ sidebarVisible ? 'Ocultar' : 'Mostrar' }} panel de tablas"
+          styleClass="p-button-text">
+        </p-button>
+        <span class="text-xl font-bold">Explorador de Base de Datos</span>
+        <p-tag 
+          *ngIf="selectedTable" 
+          [value]="selectedTable.tableName" 
+          severity="info"
+          icon="pi pi-table">
+        </p-tag>
+      </div>
+    </ng-template>
+    
+    <ng-template pTemplate="end">
+      <div class="flex align-items-center gap-2">
+        <p-button 
+          icon="pi pi-chart-bar" 
+          label="Estadísticas" 
+          (onClick)="toggleStats()"
+          styleClass="p-button-outlined p-button-secondary">
+        </p-button>
+        
+        <div class="flex gap-1">
+          <p-button 
+            icon="pi pi-file-o" 
+            label="JSON" 
+            (onClick)="exportDatabase('json')"
+            [loading]="exportLoading"
+            styleClass="p-button-outlined p-button-success p-button-sm">
+          </p-button>
+          <p-button 
+            icon="pi pi-file-excel" 
+            label="CSV" 
+            (onClick)="exportDatabase('csv')"
+            [loading]="exportLoading"
+            styleClass="p-button-outlined p-button-success p-button-sm">
+          </p-button>
+        </div>
+      </div>
+    </ng-template>
+  </p-toolbar>
+
+  <!-- Main Layout -->
+  <div class="flex gap-2" style="min-height: calc(100vh - 150px);">
+    
+    <!-- Tables Sidebar -->
+    <div *ngIf="sidebarVisible" class="w-3 flex-shrink-0">
+      <app-table-browser
+        [tables]="tables"
+        [selectedTable]="selectedTable"
+        [loading]="loading"
+        (tableSelect)="onTableSelect($event)"
+        (refresh)="loadTables()">
+      </app-table-browser>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1">
+      
+      <!-- Empty State -->
+      <div *ngIf="!selectedTable && !loading" class="flex flex-column align-items-center justify-content-center h-full p-5">
+        <i class="pi pi-database text-6xl text-primary mb-3"></i>
+        <h3 class="text-xl font-medium mb-2">Explorador de Base de Datos</h3>
+        <p class="text-color-secondary text-center max-w-30rem mb-4">
+          Selecciona una tabla del panel lateral para explorar sus datos, realizar operaciones CRUD y gestionar relaciones.
+        </p>
+        <p-button 
+          label="Ver Estadísticas de la BD" 
+          icon="pi pi-chart-bar"
+          (onClick)="toggleStats()">
+        </p-button>
+      </div>
+
+      <!-- Records View -->
+      <ng-container *ngIf="selectedTable">
+        
+        <!-- Action Toolbar -->
+        <p-toolbar styleClass="mb-2" *ngIf="tableSchema">
+          <ng-template pTemplate="start">
+            <div class="flex align-items-center gap-2">
+              <p-button 
+                icon="pi pi-plus" 
+                label="Nuevo" 
+                (onClick)="createRecord()"
+                styleClass="p-button-success">
+              </p-button>
+              
+              <p-button 
+                icon="pi pi-trash" 
+                label="Eliminar" 
+                (onClick)="deleteSelected()"
+                [disabled]="!canDeleteSelected()"
+                styleClass="p-button-danger p-button-outlined">
+              </p-button>
+              
+              <p-button 
+                icon="pi pi-filter" 
+                [label]="showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'"
+                (onClick)="toggleFilters()"
+                [styleClass]="showFilters ? 'p-button-outlined p-button-warning' : 'p-button-outlined'">
+              </p-button>
+              
+              <p-button 
+                icon="pi pi-code" 
+                label="Esquema" 
+                (onClick)="viewSchema()"
+                styleClass="p-button-outlined p-button-info">
+              </p-button>
+            </div>
+          </ng-template>
+          
+          <ng-template pTemplate="end">
+            <div class="flex align-items-center gap-2">
+              <span class="p-input-icon-left">
+                <i class="pi pi-search"></i>
+                <input 
+                  pInputText 
+                  type="text" 
+                  [(ngModel)]="globalSearch"
+                  (keyup.enter)="applyFilters()"
+                  placeholder="Buscar en todos los campos..."
+                  class="w-20rem">
+              </span>
+              
+              <p-button 
+                icon="pi pi-refresh" 
+                (onClick)="loadRecords()"
+                styleClass="p-button-text">
+              </p-button>
+            </div>
+          </ng-template>
+        </p-toolbar>
+
+        <!-- Advanced Filters -->
+        <p-panel *ngIf="showFilters && columns.length > 0" header="Filtros Avanzados" styleClass="mb-2">
+          <div class="grid">
+            <ng-container *ngFor="let column of columns">
+              <!-- Text Filter -->
+              <div *ngIf="dbService.isTextType(column.dataType)" class="col-12 md:col-4 lg:col-3 mb-2">
+                <label class="block text-sm font-medium mb-1">{{ column.columnName }}</label>
+                <input 
+                  pInputText 
+                  [(ngModel)]="filters[column.columnName]"
+                  (ngModelChange)="onFilterChange(column.columnName, $event)"
+                  [placeholder]="'Filtrar ' + column.columnName"
+                  class="w-full">
+              </div>
+              
+              <!-- Number Filter -->
+              <div *ngIf="dbService.isNumericType(column.dataType)" class="col-12 md:col-4 lg:col-3 mb-2">
+                <label class="block text-sm font-medium mb-1">{{ column.columnName }}</label>
+                <div class="flex gap-2">
+                  <p-inputNumber 
+                    [ngModel]="getFilterValue(column.columnName, 'min')"
+                    (ngModelChange)="onNumberFilterChange(column.columnName, 'min', $event)"
+                    placeholder="Mín"
+                    styleClass="w-full">
+                  </p-inputNumber>
+                  <p-inputNumber 
+                    [ngModel]="getFilterValue(column.columnName, 'max')"
+                    (ngModelChange)="onNumberFilterChange(column.columnName, 'max', $event)"
+                    placeholder="Máx"
+                    styleClass="w-full">
+                  </p-inputNumber>
+                </div>
+              </div>
+              
+              <!-- Date Filter -->
+              <div *ngIf="dbService.isDateType(column.dataType)" class="col-12 md:col-4 lg:col-3 mb-2">
+                <label class="block text-sm font-medium mb-1">{{ column.columnName }}</label>
+                <div class="flex gap-2">
+                  <input 
+                    type="datetime-local"
+                    [ngModel]="getFilterValue(column.columnName, 'from')"
+                    (ngModelChange)="onDateFilterChange(column.columnName, 'from', $event)"
+                    class="w-full p-inputtext p-component"
+                    style="padding: 0.5rem;">
+                  <input 
+                    type="datetime-local"
+                    [ngModel]="getFilterValue(column.columnName, 'to')"
+                    (ngModelChange)="onDateFilterChange(column.columnName, 'to', $event)"
+                    class="w-full p-inputtext p-component"
+                    style="padding: 0.5rem;">
+                </div>
+              </div>
+              
+              <!-- Boolean Filter -->
+              <div *ngIf="dbService.isBooleanType(column.dataType)" class="col-12 md:col-4 lg:col-3 mb-2">
+                <label class="block text-sm font-medium mb-1">{{ column.columnName }}</label>
+                <select 
+                  [ngModel]="getFilterValue(column.columnName, 'value')"
+                  (ngModelChange)="onFilterChange(column.columnName, $event)"
+                  class="w-full p-inputtext p-component"
+                  style="padding: 0.5rem;">
+                  <option [ngValue]="null">Cualquiera</option>
+                  <option [ngValue]="1">Sí</option>
+                  <option [ngValue]="0">No</option>
+                </select>
+              </div>
+            </ng-container>
+          </div>
+          
+          <div class="flex justify-content-end gap-2 mt-3">
+            <p-button 
+              label="Limpiar Filtros" 
+              icon="pi pi-filter-slash"
+              (onClick)="clearFilters()"
+              styleClass="p-button-outlined">
+            </p-button>
+            <p-button 
+              label="Aplicar Filtros" 
+              icon="pi pi-check"
+              (onClick)="applyFilters()"
+              styleClass="p-button-primary">
+            </p-button>
+          </div>
+        </p-panel>
+
+        <!-- Column Visibility -->
+        <div class="mb-2" *ngIf="columns.length > 0">
+          <p-multiSelect 
+            [options]="columns" 
+            [(ngModel)]="visibleColumns"
+            optionLabel="columnName" 
+            optionValue="columnName"
+            placeholder="Seleccionar columnas visibles"
+            [showToggleAll]="true"
+            styleClass="w-full">
+          </p-multiSelect>
+        </div>
+
+        <!-- Records Table -->
+        <p-table 
+          #dt
+          [value]="records" 
+          [columns]="visibleColumns"
+          [rows]="limit"
+          [paginator]="true"
+          [totalRecords]="totalRecords"
+          [rowsPerPageOptions]="rowsPerPageOptions"
+          [loading]="loading"
+          [resizableColumns]="true"
+          [reorderableColumns]="true"
+          [(selection)]="selectedRecords"
+          [rowHover]="true"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+          styleClass="p-datatable-sm"
+          [scrollable]="true"
+          scrollHeight="calc(100vh - 400px)"
+          (onPage)="loadRecords($event)"
+          (onSort)="loadRecords($event)">
+          
+          <ng-template pTemplate="caption">
+            <div class="flex align-items-center justify-content-between">
+              <span class="text-lg font-semibold">
+                {{ selectedTable.tableName }} 
+                <span class="text-sm text-color-secondary">({{ totalRecords | number }} registros)</span>
+              </span>
+              
+              <div class="flex gap-2">
+                <p-chip *ngIf="tableSchema?.primaryKey" [label]="'PK: ' + tableSchema?.primaryKey" icon="pi pi-key"></p-chip>
+                <p-chip *ngIf="tableSchema?.relationships?.length" 
+                        [label]="tableSchema?.relationships?.length + ' relaciones'" 
+                        icon="pi pi-sitemap"
+                        severity="info">
+                </p-chip>
+              </div>
+            </div>
+          </ng-template>
+          
+          <ng-template pTemplate="header" let-columns>
+            <tr>
+              <th style="width: 3rem">
+                <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+              </th>
+              <th *ngFor="let col of getVisibleColumnsInfo()" 
+                  [pSortableColumn]="col.columnName"
+                  pResizableColumn
+                  pReorderableColumn
+                  [style.min-width]="'150px'">
+                <div class="flex align-items-center gap-1">
+                  <i [class]="dbService.getDataTypeIcon(col.dataType)" class="text-sm text-color-secondary"></i>
+                  <span class="text-sm">{{ col.columnName }}</span>
+                  <p-sortIcon [field]="col.columnName"></p-sortIcon>
+                  <i *ngIf="col.columnName === tableSchema?.primaryKey" 
+                     class="pi pi-key text-primary text-xs">
+                  </i>
+                </div>
+                <p-tag 
+                  [value]="col.dataType" 
+                  [severity]="getDataTypeSeverity(col.dataType)"
+                  styleClass="text-xs mt-1">
+                </p-tag>
+              </th>
+              <th style="width: 100px; min-width: 100px;">Acciones</th>
+            </tr>
+          </ng-template>
+          
+          <ng-template pTemplate="body" let-record let-columns="columns">
+            <tr [pSelectableRow]="record">
+              <td>
+                <p-tableCheckbox [value]="record"></p-tableCheckbox>
+              </td>
+              <td *ngFor="let col of getVisibleColumnsInfo()" 
+                  [class.font-bold]="col.columnName === tableSchema?.primaryKey"
+                  [class.text-primary]="col.columnName === tableSchema?.primaryKey"
+                  style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ formatValue(record[col.columnName], col) }}
+              </td>
+              <td>
+                <div class="flex gap-1">
+                  <p-button 
+                    icon="pi pi-eye" 
+                    (onClick)="viewRecord(record)"
+                    styleClass="p-button-text p-button-sm"
+                    pTooltip="Ver">
+                  </p-button>
+                  <p-button 
+                    icon="pi pi-pencil" 
+                    (onClick)="editRecord(record)"
+                    styleClass="p-button-text p-button-sm p-button-warning"
+                    pTooltip="Editar">
+                  </p-button>
+                  <p-button 
+                    icon="pi pi-trash" 
+                    (onClick)="confirmDelete(record)"
+                    styleClass="p-button-text p-button-sm p-button-danger"
+                    pTooltip="Eliminar">
+                  </p-button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="visibleColumns.length + 2" class="text-center p-4">
+                <div class="flex flex-column align-items-center">
+                  <i class="pi pi-inbox text-4xl text-color-secondary mb-2"></i>
+                  <span>No se encontraron registros</span>
+                  <p-button 
+                    *ngIf="Object.keys(filters).length > 0 || globalSearch"
+                    label="Limpiar filtros" 
+                    icon="pi pi-filter-slash"
+                    (onClick)="clearFilters()"
+                    styleClass="p-button-text mt-2">
+                  </p-button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          
+          <ng-template pTemplate="loadingbody" let-columns>
+            <tr *ngFor="let _ of [1,2,3,4,5]">
+              <td *ngFor="let _ of [1,2,3,4,5,6]">
+                <p-skeleton></p-skeleton>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Record Editor Dialog -->
+  <p-dialog 
+    [(visible)]="showRecordDialog" 
+    [header]="dialogMode === 'create' ? 'Crear Registro' : dialogMode === 'edit' ? 'Editar Registro' : 'Ver Registro'"
+    [modal]="true"
+    [style]="{width: '800px', maxWidth: '95vw'}"
+    [maximizable]="true"
+    [closable]="true"
+    (onHide)="onRecordDialogClose()">
+    
+    <app-record-editor
+      *ngIf="showRecordDialog && tableSchema"
+      [tableSchema]="tableSchema"
+      [record]="currentRecord"
+      [mode]="dialogMode"
+      (save)="onRecordSaved($event)"
+      (cancel)="showRecordDialog = false">
+    </app-record-editor>
+  </p-dialog>
+
+  <!-- Schema Dialog -->
+  <p-dialog 
+    [(visible)]="showSchemaDialog" 
+    header="Esquema de Tabla"
+    [modal]="true"
+    [style]="{width: '900px', maxWidth: '95vw'}"
+    [maximizable]="true">
+    
+    <div *ngIf="tableSchema" class="schema-view">
+      <!-- Columnas Section -->
+      <div class="mb-3">
+        <div class="p-2 surface-100 border-round-top font-medium flex align-items-center gap-2">
+          <i class="pi pi-list"></i> Columnas
+        </div>
+        <div class="p-2 surface-50 border-round-bottom">
+          <p-table [value]="tableSchema.columns" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Columna</th>
+                <th>Tipo</th>
+                <th>Nulo</th>
+                <th>Default</th>
+                <th>Extra</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-col>
+              <tr [class.surface-100]="col.columnName === tableSchema.primaryKey">
+                <td>
+                  <div class="flex align-items-center gap-2">
+                    <i [class]="dbService.getDataTypeIcon(col.dataType)"></i>
+                    <span [class.font-bold]="col.columnName === tableSchema.primaryKey">
+                      {{ col.columnName }}
+                    </span>
+                    <i *ngIf="col.columnName === tableSchema.primaryKey" 
+                       class="pi pi-key text-primary"
+                       pTooltip="Clave Primaria">
+                    </i>
+                  </div>
+                </td>
+                <td>
+                  <p-tag [value]="col.dataType" [severity]="getDataTypeSeverity(col.dataType)"></p-tag>
+                </td>
+                <td>
+                  <p-tag [value]="col.isNullable === 'YES' ? 'Sí' : 'No'" 
+                         [severity]="col.isNullable === 'YES' ? 'warn' : 'success'">
+                  </p-tag>
+                </td>
+                <td>{{ col.defaultValue || '-' }}</td>
+                <td>{{ col.extra || '-' }}</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
+      
+      <!-- Relaciones Section -->
+      <div class="mb-3" *ngIf="tableSchema.relationships.length > 0">
+        <div class="p-2 surface-100 border-round-top font-medium flex align-items-center gap-2">
+          <i class="pi pi-sitemap"></i> Relaciones
+        </div>
+        <div class="p-2 surface-50 border-round-bottom">
+          <p-table [value]="tableSchema.relationships" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Columna</th>
+                <th>Referencia</th>
+                <th>Tabla Referenciada</th>
+                <th>Reglas</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-rel>
+              <tr>
+                <td>{{ rel.columnName }}</td>
+                <td>{{ rel.referencedColumn }}</td>
+                <td>
+                  <p-tag [value]="rel.referencedTable" icon="pi pi-table" severity="info"></p-tag>
+                </td>
+                <td>
+                  <small>Update: {{ rel.updateRule }}, Delete: {{ rel.deleteRule }}</small>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
+      
+      <!-- Índices Section -->
+      <div class="mb-3" *ngIf="tableSchema.indexes.length > 0">
+        <div class="p-2 surface-100 border-round-top font-medium flex align-items-center gap-2">
+          <i class="pi pi-hashtag"></i> Índices
+        </div>
+        <div class="p-2 surface-50 border-round-bottom">
+          <p-table [value]="tableSchema.indexes" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Nombre</th>
+                <th>Columna</th>
+                <th>Tipo</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-idx>
+              <tr>
+                <td>{{ idx.indexName }}</td>
+                <td>{{ idx.columnName }}</td>
+                <td>
+                  <p-tag [value]="idx.nonUnique ? 'No Único' : 'Único'" 
+                         [severity]="idx.nonUnique ? 'secondary' : 'success'">
+                  </p-tag>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
+      
+      <!-- Referencias Section -->
+      <div class="mb-3" *ngIf="tableSchema.references.length > 0">
+        <div class="p-2 surface-100 border-round-top font-medium flex align-items-center gap-2">
+          <i class="pi pi-arrow-right"></i> Referencias
+        </div>
+        <div class="p-2 surface-50 border-round-bottom">
+          <p-table [value]="tableSchema.references" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Tabla</th>
+                <th>Columna</th>
+                <th>Referencia</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-ref>
+              <tr>
+                <td>
+                  <p-tag [value]="ref.tableName" icon="pi pi-table" severity="warn"></p-tag>
+                </td>
+                <td>{{ ref.columnName }}</td>
+                <td>{{ ref.referencedColumn }}</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- Stats Sidebar -->
+  <app-database-stats
+    [visible]="showStats"
+    (close)="onStatsClose()">
+  </app-database-stats>
+
+  <!-- Confirm Delete Dialog -->
+  <p-confirmDialog 
+    [style]="{width: '450px'}"
+    acceptButtonStyleClass="p-button-danger"
+    rejectButtonStyleClass="p-button-secondary">
+  </p-confirmDialog>
+
+  <!-- Toast -->
+  <p-toast></p-toast>
+</div>

@@ -1,0 +1,17 @@
+<card-container>
+    <div>
+        <text-title [text]="title"></text-title>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="my-8" *ngFor="let key of dataKeys">
+            <text-type class="capitalize" [text]="key" [variant]="'secondary'" [size]="'medium'" class="font-bold"></text-type>
+            <span *ngIf="key === 'Estatus'" class="flex items-center gap-2">
+                    <div class="rounded-lg p-2 size-2" [ngClass]="data[key] === 'Activo' ? 'bg-green' : 'bg-gray'"></div>
+                <text-type [text]="data[key]" [ngClass]="{'font-bold': key === 'Estatus'}"></text-type>
+            </span>
+
+            <text-type *ngIf="key !== 'Estatus'" [text]="data[key]"></text-type>
+            </div>
+            
+    </div>
+</card-container>

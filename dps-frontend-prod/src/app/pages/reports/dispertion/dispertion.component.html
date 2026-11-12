@@ -1,0 +1,52 @@
+<section-title
+    title="Reportes">
+</section-title>
+<card-container class="p-6" >
+
+    <text-title
+        text="Dispersión"
+        size="medium">
+    </text-title>
+    <text-type
+        text="Genera Archivo de Dispersión.">
+    </text-type>
+
+    <form (submit)="$event.preventDefault()" action="" [formGroup]="formGroup">
+        <div class="w-full grid md:grid-cols-1 lg:grid-cols-3 py-10">
+
+            <div class="px-5 py-3">
+                
+                <app-input-text
+                    type="date"
+                    formControlName="date"
+                    label="Fecha"
+                    variant="secondary"
+                    class="w-full"
+                    >
+                </app-input-text>
+            </div>
+            
+            <div class="px-5 py-3">
+                <app-input-select
+                    id="client"
+                    label="Cliente"
+                    [formControlName]="'client'"
+                    [options]="clients"
+                    class="w-full flex-grow text-primary font-bold"
+                    >
+                </app-input-select>
+            </div>
+    
+            <div class="px-5 flex justify-center items-center py-3">
+                <action-button
+                    (click)="getFile()"
+                    [text]="'Descargar'"
+                    [linkIcon]="'DOWNLOAD'"
+                ></action-button>
+            </div>
+
+
+        </div>
+    </form>
+
+</card-container>

@@ -1,0 +1,261 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'PCI DSS Global Accelerator for Global Traffic Routing and Failover'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    Description: Environment tag (e.g., prod, qa)
+  
+  HostedZoneId:
+    Type: String
+    Description: Route 53 hosted zone ID for drakops.com.mx
+  
+  ListenerPort:
+    Type: Number
+    Default: 443
+    Description: Listener port for Global Accelerator
+  
+  HealthCheckInterval:
+    Type: Number
+    Default: 30
+    Description: Health check interval in seconds
+  
+  HealthCheckThreshold:
+    Type: Number
+    Default: 3
+    Description: Health check failure threshold
+  
+  EndpointGroupRegion:
+    Type: String
+    Default: us-east-1
+    Description: AWS region where the endpoint group and actual endpoints reside (e.g., us-east-1 for prod, us-east-2 for qa, us-west-1 for staging)
+
+Resources:
+  # Global Accelerator
+  GlobalAccelerator:
+    Type: AWS::GlobalAccelerator::Accelerator
+    Properties:
+      Name: !Sub '${Environment}-mexipay-ga'
+      IpAddressType: IPV4
+      Enabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: PCI-DSS
+          Value: 'true'
+
+  # Listener
+  AcceleratorListener:
+    Type: AWS::GlobalAccelerator::Listener
+    Properties:
+      AcceleratorArn: !Ref GlobalAccelerator
+      PortRanges:
+        - FromPort: !Ref ListenerPort
+          ToPort: !Ref ListenerPort
+      Protocol: TCP
+      ClientAffinity: SOURCE_IP
+
+  # Endpoint Group for us-east-1
+  EndpointGroupEast:
+    Type: AWS::GlobalAccelerator::EndpointGroup
+    Properties:
+      ListenerArn: !Ref AcceleratorListener
+      EndpointGroupRegion: !Ref EndpointGroupRegion
+      HealthCheckIntervalSeconds: !Ref HealthCheckInterval
+      HealthCheckPath: /health
+      HealthCheckProtocol: TCP
+      ThresholdCount: !Ref HealthCheckThreshold
+
+  # ACM Certificate for Global Accelerator
+  GlobalAcceleratorCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub '${Environment}.drakops.com.mx'
+      SubjectAlternativeNames:
+        - !Sub 'api.${Environment}.drakops.com.mx'
+        - !Sub 'admin.${Environment}.drakops.com.mx'
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Sub '${Environment}.drakops.com.mx'
+          HostedZoneId: !Ref HostedZoneId
+        - DomainName: !Sub 'api.${Environment}.drakops.com.mx'
+          HostedZoneId: !Ref HostedZoneId
+        - DomainName: !Sub 'admin.${Environment}.drakops.com.mx'
+          HostedZoneId: !Ref HostedZoneId
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Route 53 Alias Record for Global Accelerator
+  GlobalAcceleratorDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub '${Environment}.drakops.com.mx'
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+      Comment: Global Accelerator alias for mexipay
+
+  # CloudWatch Alarms
+  GlobalAcceleratorHealthCheckAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-ga-health-check-alarm'
+      AlarmDescription: Alert on Global Accelerator health check failures
+      Namespace: AWS/GlobalAccelerator
+      MetricName: HealthyEndpointCount
+      Dimensions:
+        - Name: AcceleratorArn
+          Value: !Ref GlobalAccelerator
+        - Name: ListenerArn
+          Value: !Ref AcceleratorListener
+        - Name: EndpointGroupArn
+          Value: !Ref EndpointGroupEast
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      AlarmActions:
+        - !Ref GlobalAcceleratorNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  GlobalAcceleratorLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-ga-latency-alarm'
+      AlarmDescription: Alert on high Global Accelerator latency
+      Namespace: AWS/GlobalAccelerator
+      MetricName: ClientLatency
+      Dimensions:
+        - Name: AcceleratorArn
+          Value: !Ref GlobalAccelerator
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 200
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref GlobalAcceleratorNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  GlobalAcceleratorDroppedTrafficAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-ga-dropped-traffic-alarm'
+      AlarmDescription: Alert on dropped traffic by Global Accelerator
+      Namespace: AWS/GlobalAccelerator
+      MetricName: DroppedPacketCount
+      Dimensions:
+        - Name: AcceleratorArn
+          Value: !Ref GlobalAccelerator
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 100
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref GlobalAcceleratorNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  GlobalAcceleratorNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${Environment}-ga-notifications'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Flow Logs for Global Accelerator
+  GlobalAcceleratorFlowLogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${Environment}-ga-flow-logs-${AWS::AccountId}-${AWS::Region}'
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireFlowLogs
+          Prefix: ''
+          Status: Enabled
+          ExpirationInDays: 90
+      Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: PCI-DSS
+        Value: 'true'
+
+  GlobalAcceleratorFlowLogBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref GlobalAcceleratorFlowLogBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: delivery.logs.amazonaws.com
+          Action: s3:PutObject
+          Resource: !Sub '${GlobalAcceleratorFlowLogBucket.Arn}/*'
+          Condition:
+            StringEquals:
+              s3:x-amz-acl: bucket-owner-full-control
+
+Outputs:
+  GlobalAcceleratorArn:
+    Description: Global Accelerator ARN
+    Value: !Ref GlobalAccelerator
+    Export:
+      Name: !Sub '${Environment}-global-accelerator-arn'
+
+  GlobalAcceleratorDNSName:
+    Description: Global Accelerator DNS name
+    Value: !GetAtt GlobalAccelerator.DnsName
+    Export:
+      Name: !Sub '${Environment}-global-accelerator-dns'
+
+  ListenerArn:
+    Description: Listener ARN
+    Value: !Ref AcceleratorListener
+    Export:
+      Name: !Sub '${Environment}-ga-listener-arn'
+
+  EndpointGroupArn:
+    Description: Endpoint group ARN
+    Value: !Ref EndpointGroupEast
+    Export:
+      Name: !Sub '${Environment}-ga-endpoint-group-arn'
+
+  CertificateArn:
+    Description: ACM certificate ARN
+    Value: !Ref GlobalAcceleratorCertificate
+    Export:
+      Name: !Sub '${Environment}-ga-certificate-arn'
+
+  FlowLogBucketName:
+    Description: Flow log bucket name
+    Value: !Ref GlobalAcceleratorFlowLogBucket
+    Export:
+      Name: !Sub '${Environment}-ga-flow-log-bucket'

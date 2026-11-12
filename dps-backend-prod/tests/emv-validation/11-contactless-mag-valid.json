@@ -1,0 +1,46 @@
+{
+  "testName": "Contactless Magstripe (Entry Mode 91) - Valid",
+  "description": "Valid contactless magstripe transaction with 9F6E form factor indicator, no cryptogram tags",
+  "expectedResult": "PASS",
+  "endpoint": "/gateway/v1/retail/charge",
+  "headers": {
+    "commerce-id": "9953404",
+    "commerce-name": "MEX CARLS PRUEBAS",
+    "x-time": "1752345600",
+    "tkr": "1740695789753srW",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "reference": "TCM001",
+    "amount": 321,
+    "entryMode": "912",
+    "entry_mode": "912",
+    "authentication": "contactless",
+    "cardInformation": {
+      "card_number": "4152314611664742",
+      "bin": "415231",
+      "last4": "4742",
+      "cvv": "123",
+      "expiration_month": "11",
+      "expiration_year": "31",
+      "tk2": "4152314611664742D31112210000073705002"
+    },
+    "device": {
+      "serial": "TERM005"
+    },
+    "emvTags": [
+      { "tag": "5A", "value": "4152314611664742" },
+      { "tag": "57", "value": "4152314611664742D31112210000073705002" },
+      { "tag": "5F24", "value": "311130" },
+      { "tag": "5F2A", "value": "484" },
+      { "tag": "5F30", "value": "101F" },
+      { "tag": "5F34", "value": "01" },
+      { "tag": "9A", "value": "260711" },
+      { "tag": "9C", "value": "00" },
+      { "tag": "9F02", "value": "000000000321" },
+      { "tag": "9F03", "value": "000000000000" },
+      { "tag": "9F1A", "value": "0484" },
+      { "tag": "9F6E", "value": "00000001" }
+    ]
+  }
+}

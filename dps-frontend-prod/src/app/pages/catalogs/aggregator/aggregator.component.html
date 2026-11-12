@@ -1,0 +1,22 @@
+<section-title
+    title="Listado de Agregadores"
+    textBtn="Nuevo agregador"
+    [linkText]="linkNewRow"
+    [canCreate]="canCreate"
+    >
+</section-title>
+<card-container>
+    <table-layout 
+        [dataTable]="agregatorsData"
+        [actions]="actions" 
+        [showActions]="true" 
+        [actionsColumnIndex]="2"
+        [filter]="true"
+        [filter]="true"
+        >    
+    </table-layout>
+</card-container>
+<modal-confirm
+  (accept)="handleReject()" 
+  (reject)="handleAccept()">
+</modal-confirm>

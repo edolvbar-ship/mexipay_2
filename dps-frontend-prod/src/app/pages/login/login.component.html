@@ -1,0 +1,60 @@
+<div class="h-1"></div>
+<div class="max-w-xl mx-auto px-12">
+  <form (keydown.enter)="login()">
+    <div class="content-center flex flex-col select-none">
+      <div class="mb-12">
+        <text-title text="Iniciar sesión" size="xlarge" variant="primary">
+        </text-title>
+        <text-type text="¡Hola! 👋 Ingresa tu nombre de usuario y contraseña para poder iniciar sesión." size="xlarge"
+          variant="primary" class="text-center">
+        </text-type>
+      </div>
+      <div class="flex flex-col">
+        <!-- Campo Nombre de Usuario -->
+        <div class="top-0 mb-12">
+          <label class="h-full flex items-center mb-6">
+            <text-type text="Nombre de usuario" size="xlarge" variant="primary">
+            </text-type>
+          </label>
+          <div class="relative">
+            <input [(ngModel)]="user" type="text" id="user" name="user"
+              class="block h-full rounded-t-lg pl-10 pr-4 py-2 w-full text-base text-black font-medium border-0 border-b-2 border-gray appearance-none focus:outline-none focus:ring-0 focus:border-primary"
+              placeholder="Ingresa tu nombre de usuario" />
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+              <i class="pi pi-user"></i>
+            </span>
+          </div>
+        </div>
+        <!-- Campo Contraseña -->
+        <div class="bottom-0 mb-12">
+          <label class="h-full flex items-center mb-6">
+            <text-type text="Contraseña" size="xlarge" variant="primary"></text-type>
+          </label>
+          <div class="relative">
+            <input [(ngModel)]="password" [type]="passwordType" id="password" name="password"
+              class="block h-full rounded-t-lg pl-10 pr-4 py-2 w-full text-base text-black font-medium border-0 border-b-2 border-gray appearance-none focus:outline-none focus:ring-0 focus:border-primary"
+              placeholder="Ingresa tu contraseña" />
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+              <i class="pi pi-lock"></i>
+            </span>
+            <span (click)="passVisibility()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-black">
+              <i class="pi pi-eye-slash"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="mb-4">
+        <default-button (click)="login()" text="{{textBtn}}">
+        </default-button>
+      </div>
+      <div>
+        <text-type text="¿Olvidaste tu contraseña?" size="xlarge" variant="primary" class="text-center">
+        </text-type>
+        <a routerLink="/recovery-password">
+          <text-type text="¡Ingresa aquí!" size="xlarge" variant="secondary" class="text-center">
+          </text-type>
+        </a>
+      </div>
+    </div>
+  </form>
+</div>

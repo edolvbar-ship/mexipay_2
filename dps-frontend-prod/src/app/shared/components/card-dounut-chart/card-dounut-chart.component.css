@@ -1,0 +1,59 @@
+
+.chart-container {
+  position: relative;
+  width: 60px;  /* Half of the original size */
+  height: 60px; /* Half of the original size */
+}
+
+.overlay-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.125rem; /* Adjusted font size for smaller chart */
+  font-weight: bold;
+  pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (min-width: 640px) {
+  .chart-container {
+    width: 70px;
+    height: 70px;
+  }
+
+  .overlay-text {
+    font-size: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .chart-container {
+    width: 80px;
+    height: 80px;
+  }
+
+  .overlay-text {
+    font-size: 1.5rem;
+  }
+}
+
+/* Override the donut chart component size within card-dounut-chart */
+::ng-deep donut-chart div {
+  width: 60px !important;
+  height: 60px !important;
+}
+
+@media (min-width: 640px) {
+  ::ng-deep donut-chart div {
+    width: 70px !important;
+    height: 70px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  ::ng-deep donut-chart div {
+    width: 80px !important;
+    height: 80px !important;
+  }
+}

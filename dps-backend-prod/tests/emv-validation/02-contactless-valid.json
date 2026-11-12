@@ -1,0 +1,66 @@
+{
+  "testName": "Contactless (Entry Mode 07) - Valid EMV Tags",
+  "description": "Valid contactless transaction with all required EMV tags including 9F4C and 9F6E",
+  "expectedResult": "PASS",
+  "endpoint": "/gateway/v1/retail/charge",
+  "headers": {
+    "commerce-id": "9953404",
+    "commerce-name": "MEX CARLS PRUEBAS",
+    "x-time": "1752345600",
+    "tkr": "1740695789753srW",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "reference": "TC2001",
+    "amount": 321,
+    "entryMode": "072",
+    "entry_mode": "072",
+    "authentication": "contactless",
+    "cardInformation": {
+      "card_number": "4152314611664742",
+      "bin": "415231",
+      "last4": "4742",
+      "cvv": "123",
+      "expiration_month": "11",
+      "expiration_year": "31",
+      "tk2": "4152314611664742D31112210000073705002"
+    },
+    "device": {
+      "serial": "TERM002"
+    },
+    "emvTags": [
+      { "tag": "4F", "value": "A0000000031010" },
+      { "tag": "5A", "value": "4152314611664742" },
+      { "tag": "57", "value": "4152314611664742D31112210000073705002" },
+      { "tag": "5F24", "value": "311130" },
+      { "tag": "5F2A", "value": "484" },
+      { "tag": "5F30", "value": "201F" },
+      { "tag": "5F34", "value": "01" },
+      { "tag": "50", "value": "VISA DEBIT" },
+      { "tag": "82", "value": "3800" },
+      { "tag": "84", "value": "A0000000031010" },
+      { "tag": "8E", "value": "0000000000000000020142041E0402054203440341035E031F02" },
+      { "tag": "95", "value": "0000000000" },
+      { "tag": "9A", "value": "260711" },
+      { "tag": "9B", "value": "E800" },
+      { "tag": "9C", "value": "00" },
+      { "tag": "9F02", "value": "000000000321" },
+      { "tag": "9F03", "value": "000000000000" },
+      { "tag": "9F09", "value": "0096" },
+      { "tag": "9F10", "value": "06011203A0A811" },
+      { "tag": "9F1A", "value": "0484" },
+      { "tag": "9F1E", "value": "303030313035" },
+      { "tag": "9F21", "value": "061802" },
+      { "tag": "9F26", "value": "4E8966E4B52EE8A9" },
+      { "tag": "9F27", "value": "80" },
+      { "tag": "9F33", "value": "E0B0C8" },
+      { "tag": "9F34", "value": "410301" },
+      { "tag": "9F35", "value": "22" },
+      { "tag": "9F36", "value": "0052" },
+      { "tag": "9F37", "value": "7E279C51" },
+      { "tag": "9F39", "value": "07" },
+      { "tag": "9F4C", "value": "A4B2C3D4E5F6A7B8" },
+      { "tag": "9F6E", "value": "00000001" }
+    ]
+  }
+}

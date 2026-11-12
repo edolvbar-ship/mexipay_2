@@ -1,0 +1,14 @@
+input[type="radio"]:checked {
+    accent-color:#0C4772;
+    background-color:#0C4772;
+}
+
+input[type="checkbox"]:checked {
+    border-radius: 10px;
+    border-color: var(--primary);
+}
+
+input[type="checkbox"]:checked {
+    accent-color:#0C4772;
+    background-color:#0C4772;
+}

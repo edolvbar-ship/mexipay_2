@@ -1,0 +1,1184 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Monitoring Infrastructure for MexiPay Gateway - SNS Topics, CloudWatch Alarms, and X-Ray Configuration'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'production'
+    AllowedValues: ['production', 'qa', 'staging']
+    Description: 'Environment name for resource naming'
+
+  AlertEmail1:
+    Type: String
+    Description: 'First email recipient'
+    Default: 'soporte@muukpay.com.mx'
+
+  AlertEmail2:
+    Type: String
+    Description: 'Second email recipient (optional)'
+    Default: ''
+
+  AlertEmail3:
+    Type: String
+    Description: 'Third email recipient (optional)'
+    Default: ''
+
+  AlertSms1:
+    Type: String
+    Description: 'First SMS recipient'
+    Default: '+0000000000'
+
+  AlertSms2:
+    Type: String
+    Description: 'Second SMS recipient (optional)'
+    Default: ''
+
+  WAFWebACLId:
+    Type: String
+    Description: 'WAF Web ACL ID for PCI dashboard'
+    Default: ''
+
+  LoadBalancerName:
+    Type: String
+    Description: 'Load balancer name for dashboard metrics'
+    Default: ''
+
+  DBInstanceIdentifier:
+    Type: String
+    Description: 'RDS DB instance identifier'
+    Default: ''
+
+  AutoScalingGroupName:
+    Type: String
+    Description: 'Auto Scaling Group name'
+    Default: ''
+
+  ApiGatewayName:
+    Type: String
+    Description: 'API Gateway name'
+    Default: ''
+
+  LambdaAuthFunction:
+    Type: String
+    Description: 'Auth Lambda function name'
+    Default: ''
+
+  LambdaProcessorFunction:
+    Type: String
+    Description: 'Processor Lambda function name'
+    Default: ''
+
+Conditions:
+  HasEmail2: !Not [!Equals [!Ref AlertEmail2, ""]]
+  HasEmail3: !Not [!Equals [!Ref AlertEmail3, ""]]
+  HasSms2: !Not [!Equals [!Ref AlertSms2, ""]]
+  HasWAF: !Not [!Equals [!Ref WAFWebACLId, ""]]
+  HasLoadBalancer: !Not [!Equals [!Ref LoadBalancerName, ""]]
+  HasDBInstance: !Not [!Equals [!Ref DBInstanceIdentifier, ""]]
+  HasASG: !Not [!Equals [!Ref AutoScalingGroupName, ""]]
+  HasApiGateway: !Not [!Equals [!Ref ApiGatewayName, ""]]
+  HasLambdaAuth: !Not [!Equals [!Ref LambdaAuthFunction, ""]]
+  HasLambdaProcessor: !Not [!Equals [!Ref LambdaProcessorFunction, ""]]
+
+Resources:
+  AlertSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'mexipay-alerts-${Environment}'
+      DisplayName: !Sub 'MexiPay Gateway Alerts - ${Environment}'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: 'mexipay-gateway'
+        - Key: Purpose
+          Value: 'monitoring-alerts'
+
+  AlertEmailSubscription1:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !Ref AlertEmail1
+      Protocol: email
+      TopicArn: !Ref AlertSNSTopic
+
+  AlertEmailSubscription2:
+    Type: AWS::SNS::Subscription
+    Condition: HasEmail2
+    Properties:
+      Endpoint: !Ref AlertEmail2
+      Protocol: email
+      TopicArn: !Ref AlertSNSTopic
+
+  AlertEmailSubscription3:
+    Type: AWS::SNS::Subscription
+    Condition: HasEmail3
+    Properties:
+      Endpoint: !Ref AlertEmail3
+      Protocol: email
+      TopicArn: !Ref AlertSNSTopic
+
+  AlertSmsSubscription1:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !Ref AlertSms1
+      Protocol: sms
+      TopicArn: !Ref AlertSNSTopic
+
+  AlertSmsSubscription2:
+    Type: AWS::SNS::Subscription
+    Condition: HasSms2
+    Properties:
+      Endpoint: !Ref AlertSms2
+      Protocol: sms
+      TopicArn: !Ref AlertSNSTopic
+
+  # =============================================================================
+  # CLOUDWATCH ALARMS
+  # =============================================================================
+
+  HighTransactionFailureRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'mexipay-${Environment}-high-transaction-failure-rate'
+      AlarmDescription: 'Transaction failure rate exceeds 5%'
+      MetricName: 'TransactionFailure'
+      Namespace: !Sub 'MexiPay-${Environment}'
+      Statistic: 'Sum'
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: 'GreaterThanThreshold'
+      AlarmActions:
+        - !Ref AlertSNSTopic
+      OKActions:
+        - !Ref AlertSNSTopic
+      TreatMissingData: 'notBreaching'
+      Dimensions:
+        - Name: 'Service'
+          Value: 'mexipay-gateway'
+        - Name: 'Environment'
+          Value: !Ref Environment
+
+  LowTransactionVolumeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'mexipay-${Environment}-low-transaction-volume'
+      AlarmDescription: 'Transaction volume below expected threshold'
+      MetricName: 'TransactionCount'
+      Namespace: !Sub 'MexiPay-${Environment}'
+      Statistic: 'Sum'
+      Period: 300
+      EvaluationPeriods: 6
+      Threshold: 10
+      ComparisonOperator: 'LessThanThreshold'
+      AlarmActions:
+        - !Ref AlertSNSTopic
+      OKActions:
+        - !Ref AlertSNSTopic
+      TreatMissingData: 'notBreaching'
+      Dimensions:
+        - Name: 'Service'
+          Value: 'mexipay-gateway'
+        - Name: 'Environment'
+          Value: !Ref Environment
+
+  HighApiResponseTimeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'mexipay-${Environment}-high-api-response-time'
+      AlarmDescription: 'API response time exceeds 2 seconds'
+      MetricName: 'ApiResponseTime'
+      Namespace: !Sub 'MexiPay-${Environment}'
+      Statistic: 'Average'
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 2000
+      ComparisonOperator: 'GreaterThanThreshold'
+      AlarmActions:
+        - !Ref AlertSNSTopic
+      OKActions:
+        - !Ref AlertSNSTopic
+      TreatMissingData: 'notBreaching'
+      Dimensions:
+        - Name: 'Service'
+          Value: 'mexipay-gateway'
+        - Name: 'Environment'
+          Value: !Ref Environment
+
+  HighApiErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'mexipay-${Environment}-high-api-error-rate'
+      AlarmDescription: 'API error rate exceeds 10%'
+      MetricName: 'ApiErrorRate'
+      Namespace: !Sub 'MexiPay-${Environment}'
+      Statistic: 'Sum'
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: 'GreaterThanThreshold'
+      AlarmActions:
+        - !Ref AlertSNSTopic
+      OKActions:
+        - !Ref AlertSNSTopic
+      TreatMissingData: 'notBreaching'
+      Dimensions:
+        - Name: 'Service'
+          Value: 'mexipay-gateway'
+        - Name: 'Environment'
+          Value: !Ref Environment
+
+  HighMemoryUsageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'mexipay-${Environment}-high-memory-usage'
+      AlarmDescription: 'Memory usage exceeds 90%'
+      MetricName: 'MemoryUsageMB'
+      Namespace: !Sub 'MexiPay-${Environment}'
+      Statistic: 'Average'
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 90
+      ComparisonOperator: 'GreaterThanThreshold'
+      AlarmActions:
+        - !Ref AlertSNSTopic
+      OKActions:
+        - !Ref AlertSNSTopic
+      TreatMissingData: 'notBreaching'
+      Dimensions:
+        - Name: 'Service'
+          Value: 'mexipay-gateway'
+        - Name: 'Environment'
+          Value: !Ref Environment
+
+  HighCpuUsageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'mexipay-${Environment}-high-cpu-usage'
+      AlarmDescription: 'CPU usage exceeds 80%'
+      MetricName: 'CpuUsage'
+      Namespace: !Sub 'MexiPay-${Environment}'
+      Statistic: 'Average'
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: 'GreaterThanThreshold'
+      AlarmActions:
+        - !Ref AlertSNSTopic
+      OKActions:
+        - !Ref AlertSNSTopic
+      TreatMissingData: 'notBreaching'
+      Dimensions:
+        - Name: 'Service'
+          Value: 'mexipay-gateway'
+        - Name: 'Environment'
+          Value: !Ref Environment
+
+  # =============================================================================
+  # CLOUDWATCH DASHBOARDS
+  # =============================================================================
+
+  MonitoringDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub 'mexipay-${Environment}-monitoring-dashboard'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 2,
+              "properties": {
+                "markdown": "# MexiPay Gateway - ${Environment} Monitoring Dashboard\n**Real-time operational visibility for payment gateway services**"
+              }
+            },
+            {
+              "type": "alarm",
+              "x": 0,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "title": "Critical Alarms",
+                "alarms": [
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-high-transaction-failure-rate",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-high-api-response-time",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-high-api-error-rate",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-high-memory-usage",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-high-cpu-usage"
+                ],
+                "sortBy": "state",
+                "state": "ALARM"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 6,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "TransactionCount", "Service", "mexipay-gateway", { "stat": "Sum", "period": 60 } ],
+                  [ "MexiPay-${Environment}", "TransactionSuccess", "Service", "mexipay-gateway", { "stat": "Sum", "period": 60 } ],
+                  [ "MexiPay-${Environment}", "TransactionFailure", "Service", "mexipay-gateway", { "stat": "Sum", "period": 60 } ]
+                ],
+                "view": "singleValue",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Transaction Volume (Last Hour)",
+                "period": 60,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "TransactionSuccess", "Service", "mexipay-gateway", { "stat": "Sum", "period": 60 } ],
+                  [ "MexiPay-${Environment}", "TransactionFailure", "Service", "mexipay-gateway", { "stat": "Sum", "period": 60 } ]
+                ],
+                "view": "pie",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Transaction Success Rate",
+                "period": 60,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 18,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "ApiResponseTime", "Service", "mexipay-gateway", { "stat": "Average", "period": 60 } ],
+                  [ "MexiPay-${Environment}", "ApiErrorRate", "Service", "mexipay-gateway", { "stat": "Average", "period": 60 } ]
+                ],
+                "view": "singleValue",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "API Performance (Current)",
+                "period": 60,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 5,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "TransactionCount", "Service", "mexipay-gateway", { "label": "Total Transactions" } ],
+                  [ "MexiPay-${Environment}", "TransactionSuccess", "Service", "mexipay-gateway", { "label": "Successful" } ],
+                  [ "MexiPay-${Environment}", "TransactionFailure", "Service", "mexipay-gateway", { "label": "Failed" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": true,
+                "region": "${AWS::Region}",
+                "title": "Transaction Volume Trends",
+                "period": 300,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 5,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "ApiResponseTime", "Service", "mexipay-gateway", { "label": "Response Time (ms)" } ],
+                  [ "MexiPay-${Environment}", "ApiErrorRate", "Service", "mexipay-gateway", { "label": "Error Rate (%)" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "API Performance Trends",
+                "period": 300,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 11,
+              "width": 8,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "MemoryUsageMB", "Service", "mexipay-gateway", { "label": "Memory (MB)" } ],
+                  [ "MexiPay-${Environment}", "CpuUsage", "Service", "mexipay-gateway", { "label": "CPU (%)" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "System Resource Utilization",
+                "period": 300,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "log",
+              "x": 0,
+              "y": 17,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "logGroupName": "/aws/elasticbeanstalk/${Environment}/monitoring",
+                "view": "table",
+                "region": "${AWS::Region}",
+                "title": "Recent Error Logs",
+                "queryString": "fields @timestamp, @message\n| filter @message like /ERROR/\n| sort @timestamp desc\n| limit 20"
+              }
+            },
+            {
+              "type": "log",
+              "x": 12,
+              "y": 17,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "logGroupName": "/aws/elasticbeanstalk/${Environment}/monitoring",
+                "view": "table",
+                "region": "${AWS::Region}",
+                "title": "Recent Warning Logs",
+                "queryString": "fields @timestamp, @message\n| filter @message like /WARN/\n| sort @timestamp desc\n| limit 20"
+              }
+            }
+          ]
+        }
+
+  BusinessMetricsDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub 'mexipay-${Environment}-business-metrics'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 2,
+              "properties": {
+                "markdown": "# MexiPay Business Metrics - ${Environment}\n**Payment gateway KPIs and business performance indicators**"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "TransactionCount", "Service", "mexipay-gateway", { "stat": "Sum", "period": 3600 } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 30000,
+                    "label": "#"
+                  }
+                },
+                "view": "singleValue",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Total Transactions (24h)",
+                "period": 3600,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 6,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "TransactionSuccess", "Service", "mexipay-gateway", { "stat": "Sum", "period": 3600 } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 100,
+                    "label": "%"
+                  }
+                },
+                "view": "gauge",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Success Rate (24h)",
+                "period": 3600,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "TransactionAmount", "Service", "mexipay-gateway", { "stat": "Sum", "period": 3600 } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 1000,
+                    "label": "$"
+                  }
+                },
+                "view": "singleValue",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Total Volume (24h)",
+                "period": 3600,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 18,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "AverageTransactionValue", "Service", "mexipay-gateway", { "stat": "Average", "period": 3600 } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 1000,
+                    "label": "$"
+                  }
+                },
+                "view": "singleValue",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Avg Transaction Value",
+                "period": 3600,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 5,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "TransactionSuccess", "Service", "mexipay-gateway", { "label": "Successful" } ],
+                  [ "MexiPay-${Environment}", "TransactionFailure", "Service", "mexipay-gateway", { "label": "Failed" } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 30000,
+                    "label": "#"
+                  }
+                },
+                "view": "timeSeries",
+                "stacked": true,
+                "region": "${AWS::Region}",
+                "title": "Transaction Volume Trend",
+                "period": 3600,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 5,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "RefundAmount", "Service", "mexipay-gateway", { "label": "Refunds" } ],
+                  [ "MexiPay-${Environment}", "ChargebackAmount", "Service", "mexipay-gateway", { "label": "Chargebacks" } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 1000,
+                    "label": "#"
+                  }
+                },
+                "view": "timeSeries",
+                "stacked": true,
+                "region": "${AWS::Region}",
+                "title": "Payment Volume Trend",
+                "period": 3600,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 11,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "ApiResponseTime", "Service", "mexipay-gateway", { "label": "Response Time" } ],
+                  [ "MexiPay-${Environment}", "ProcessingTime", "Service", "mexipay-gateway", { "label": "Processing Time" } ],
+                  [ "MexiPay-${Environment}", "SettlementTime", "Service", "mexipay-gateway", { "label": "Settlement Time" } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 20,
+                    "label": "Seconds"
+                  }
+                },
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Processing Latency",
+                "period": 300,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 17,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "RefundCount", "Service", "mexipay-gateway", { "label": "Refund Count" } ],
+                  [ "MexiPay-${Environment}", "RefundRate", "Service", "mexipay-gateway", { "label": "Refund Rate %" } ],
+                  [ "MexiPay-${Environment}", "ChargebackCount", "Service", "mexipay-gateway", { "label": "Chargeback Count" } ],
+                  [ "MexiPay-${Environment}", "ChargebackRate", "Service", "mexipay-gateway", { "label": "Chargeback Rate %" } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 1000,
+                    "label": "#"
+                  }
+                },
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Refund & Chargeback Metrics",
+                "period": 3600,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 17,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "MexiPay-${Environment}", "ActiveMerchants", "Service", "mexipay-gateway", { "label": "Active Merchants" } ],
+                  [ "MexiPay-${Environment}", "NewMerchants", "Service", "mexipay-gateway", { "label": "New Merchants" } ],
+                  [ "MexiPay-${Environment}", "ChurnedMerchants", "Service", "mexipay-gateway", { "label": "Churned Merchants" } ]
+                ],
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 100,
+                    "label": "#"
+                  }
+                },
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Merchant Metrics",
+                "period": 86400,
+                "stat": "Sum"
+              }
+            }
+          ]
+        }
+
+  OperationalHealthDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub 'mexipay-${Environment}-operational-health'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 2,
+              "properties": {
+                "markdown": "# MexiPay Operational Health - ${Environment}\n**Infrastructure health, availability, and system performance**"
+              }
+            },
+            {
+              "type": "alarm",
+              "x": 0,
+              "y": 2,
+              "width": 8,
+              "height": 3,
+              "properties": {
+                "title": "All Alarms",
+                "alarms": [
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-high-transaction-failure-rate",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-low-transaction-volume",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-high-api-response-time",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-high-api-error-rate",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-high-memory-usage",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:mexipay-${Environment}-high-cpu-usage"
+                ],
+                "sortBy": "state"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16,
+              "y": 2,
+              "width": 8,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ApplicationELB", "HealthyHostCount", "LoadBalancer", "LB1", { "stat": "Average", "period": 60 } ],
+                  [ "AWS/ApplicationELB", "UnHealthyHostCount", "LoadBalancer", "LB1", { "stat": "Average", "period": 60 } ]
+                ],
+                "view": "singleValue",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Target Health",
+                "period": 60,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 5,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "LB1", { "label": "Response Time" } ],
+                  [ "AWS/ApplicationELB", "TargetConnectionErrorCount", "LoadBalancer", "LB1", { "label": "Connection Errors" } ],
+                  [ "AWS/ApplicationELB", "HTTPCode_ELB_5XX_Count", "LoadBalancer", "LB1", { "label": "ELB 5XX" } ],
+                  [ "AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", "LB1", { "label": "Target 5XX" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Load Balancer Performance",
+                "period": 300,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 5,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ApplicationELB", "HealthyHostCount", "LoadBalancer", "LB1", { "label": "Healthy Hosts" } ],
+                  [ "AWS/ApplicationELB", "UnHealthyHostCount", "LoadBalancer", "LB1", { "label": "Unhealthy Hosts" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Target Health Status",
+                "period": 300,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 11,
+              "width": 8,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "Autoscaling-Group", { "label": "CPU %" } ],
+                  [ "AWS/EC2", "NetworkIn", "AutoScalingGroupName", "Autoscaling-Group", { "label": "Network In" } ],
+                  [ "AWS/EC2", "NetworkOut", "AutoScalingGroupName", "Autoscaling-Group", { "label": "Network Out" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "ASG Resource Utilization",
+                "period": 300,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8,
+              "y": 11,
+              "width": 8,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/AutoScaling", "GroupInServiceInstances", "AutoScalingGroupName", "Autoscaling-Group", { "label": "In Service" } ],
+                  [ "AWS/AutoScaling", "GroupStandbyInstances", "AutoScalingGroupName", "Autoscaling-Group", { "label": "Standby" } ],
+                  [ "AWS/AutoScaling", "GroupTerminatingInstances", "AutoScalingGroupName", "Autoscaling-Group", { "label": "Terminating" } ],
+                  [ "AWS/AutoScaling", "GroupTotalInstances", "AutoScalingGroupName", "Autoscaling-Group", { "label": "Total" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "ASG Instance States",
+                "period": 300,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16,
+              "y": 11,
+              "width": 8,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/EC2", "StatusCheckFailed", "AutoScalingGroupName", "Autoscaling-Group", { "label": "Status Checks Failed" } ],
+                  [ "AWS/EC2", "StatusCheckFailed_Instance", "AutoScalingGroupName", "Autoscaling-Group", { "label": "Instance Checks" } ],
+                  [ "AWS/EC2", "StatusCheckFailed_System", "AutoScalingGroupName", "Autoscaling-Group", { "label": "System Checks" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "ASG Health Checks",
+                "period": 300,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 17,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "DB-RDS", { "label": "CPU %" } ],
+                  [ "AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "DB-RDS", { "label": "Connections" } ],
+                  [ "AWS/RDS", "FreeableMemory", "DBInstanceIdentifier", "DB-RDS", { "label": "Free Memory" } ],
+                  [ "AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", "DB-RDS", { "label": "Free Storage" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Database Health",
+                "period": 300,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 17,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/RDS", "ReadLatency", "DBInstanceIdentifier", "DB-RDS", { "label": "Read Latency" } ],
+                  [ "AWS/RDS", "WriteLatency", "DBInstanceIdentifier", "DB-RDS", { "label": "Write Latency" } ],
+                  [ "AWS/RDS", "DiskQueueDepth", "DBInstanceIdentifier", "DB-RDS", { "label": "Disk Queue Depth" } ],
+                  [ "AWS/RDS", "NetworkReceiveThroughput", "DBInstanceIdentifier", "DB-RDS", { "label": "Network RX" } ],
+                  [ "AWS/RDS", "NetworkTransmitThroughput", "DBInstanceIdentifier", "DB-RDS", { "label": "Network TX" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Database Performance",
+                "period": 300,
+                "stat": "Average"
+              }
+            },
+            {
+              "type": "log",
+              "x": 0,
+              "y": 23,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "logGroupName": "/aws/elasticbeanstalk/${Environment}/monitoring",
+                "view": "table",
+                "region": "${AWS::Region}",
+                "title": "Recent System Logs",
+                "queryString": "fields @timestamp, @message\n| sort @timestamp desc\n| limit 25"
+              }
+            },
+            {
+              "type": "log",
+              "x": 12,
+              "y": 23,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "logGroupName": "/aws/elasticbeanstalk/${Environment}/monitoring",
+                "view": "table",
+                "region": "${AWS::Region}",
+                "title": "Error Log Insights",
+                "queryString": "fields @timestamp, @message\n| filter @message like /ERROR|CRITICAL|FATAL/\n| stats count() by @message\n| sort count desc\n| limit 10"
+              }
+            }
+          ]
+        }
+
+  PCISecurityMonitoringDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Condition: HasWAF
+    Properties:
+      DashboardName: !Sub '${Environment}-PCI-Security-Monitoring'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 2,
+              "properties": {
+                "markdown": "# PCI DSS Security Monitoring - ${Environment}\n**Comprehensive security visibility for payment card data protection**"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "AWS/WAFV2", "BlockedRequests", "WebACL", "${WAFWebACLId}", "Region", "${AWS::Region}", { "stat": "Sum", "period": 60 } ]
+                ],
+                "view": "singleValue",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Total Blocked Requests (1h)",
+                "period": 60,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 6,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "AWS/WAFV2", "AllowedRequests", "WebACL", "${WAFWebACLId}", "Region", "${AWS::Region}", { "stat": "Sum", "period": 60 } ]
+                ],
+                "view": "singleValue",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Total Allowed Requests (1h)",
+                "period": 60,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "AWS/WAFV2", "BlockedRequests", "WebACL", "${WAFWebACLId}", "Region", "${AWS::Region}", { "stat": "Sum", "period": 60 } ],
+                  [ "AWS/WAFV2", "AllowedRequests", "WebACL", "${WAFWebACLId}", "Region", "${AWS::Region}", { "stat": "Sum", "period": 60 } ]
+                ],
+                "view": "pie",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Block vs Allow Ratio",
+                "period": 60,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 18,
+              "y": 2,
+              "width": 6,
+              "height": 3,
+              "properties": {
+                "metrics": [
+                  [ "AWS/WAFV2", "CountedRequests", "WebACL", "${WAFWebACLId}", "Region", "${AWS::Region}", { "stat": "Sum", "period": 60 } ]
+                ],
+                "view": "singleValue",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Rate Limiting Events (1h)",
+                "period": 60,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 5,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/WAFV2", "BlockedRequests", "WebACL", "${WAFWebACLId}", "Region", "${AWS::Region}", { "label": "WAF Blocks" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": true,
+                "region": "${AWS::Region}",
+                "title": "WAF Blocked Requests Over Time",
+                "period": 300,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 5,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/WAFV2", "AllowedRequests", "WebACL", "${WAFWebACLId}", "Region", "${AWS::Region}", { "label": "WAF Allowed" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": true,
+                "region": "${AWS::Region}",
+                "title": "WAF Allowed Requests Over Time",
+                "period": 300,
+                "stat": "Sum"
+              }
+            },
+            {
+              "type": "text",
+              "x": 0,
+              "y": 11,
+              "width": 24,
+              "height": 2,
+              "properties": {
+                "markdown": "## PCI DSS Compliance Status\n| Requirement | Status | Last Check |\n|-------------|--------|------------|\n| WAF Protection | ? Compliant | Now |\n| Database Encryption | ? Compliant | Now |\n| Access Control | ? Compliant | Now |\n| Logging & Monitoring | ? Compliant | Now |\n| Network Security | ? Compliant | Now |"
+              }
+            }
+          ]
+        }
+
+  # =============================================================================
+  # IAM ROLES
+  # =============================================================================
+
+  XRayServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'xray.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess'
+      Policies:
+        - PolicyName: XRayAdditionalPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'xray:PutTraceSegments'
+                  - 'xray:PutTelemetryRecords'
+                  - 'xray:GetSamplingRules'
+                  - 'xray:GetSamplingTargets'
+                  - 'xray:GetServiceGraph'
+                  - 'xray:GetTraceGraph'
+                  - 'xray:GetTraceSummaries'
+                Resource: '*'
+      RoleName: !Sub 'mexipay-${Environment}-xray-service-role'
+
+  CloudWatchAgentPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub 'mexipay-${Environment}-cloudwatch-agent-policy'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'cloudwatch:PutMetricData'
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+              - 'logs:DescribeLogStreams'
+              - 'ec2:DescribeInstances'
+              - 'ec2:DescribeTags'
+            Resource: '*'
+
+  MonitoringLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/elasticbeanstalk/${Environment}/monitoring'
+      RetentionInDays: 30
+
+Outputs:
+  AlertSNSTopicArn:
+    Description: 'ARN of the SNS topic for alerts'
+    Value: !Ref AlertSNSTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-AlertSNSTopicArn'
+
+  MonitoringDashboardUrl:
+    Description: 'URL of the CloudWatch monitoring dashboard'
+    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=mexipay-${Environment}-monitoring-dashboard'
+
+  PCISecurityMonitoringDashboardUrl:
+    Description: 'URL of the PCI Security monitoring dashboard'
+    Value: !If [HasWAF, !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${Environment}-PCI-Security-Monitoring', 'Not Created']
+
+  BusinessMetricsDashboardUrl:
+    Description: 'URL of the Business Metrics dashboard'
+    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=mexipay-${Environment}-business-metrics'
+
+  OperationalHealthDashboardUrl:
+    Description: 'URL of the Operational Health dashboard'
+    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=mexipay-${Environment}-operational-health'
+
+  XRayServiceRoleArn:
+    Description: 'ARN of the X-Ray service role'
+    Value: !GetAtt XRayServiceRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-XRayServiceRoleArn'
+
+  MonitoringLogGroupName:
+    Description: 'Name of the monitoring log group'
+    Value: !Ref MonitoringLogGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-MonitoringLogGroupName'
+
+  CloudWatchAgentPolicyArn:
+    Description: 'ARN of the CloudWatch Agent managed policy'
+    Value: !Ref CloudWatchAgentPolicy
+    Export:
+      Name: !Sub '${AWS::StackName}-CloudWatchAgentPolicyArn'

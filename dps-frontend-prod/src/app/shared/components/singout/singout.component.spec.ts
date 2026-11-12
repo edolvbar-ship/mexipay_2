@@ -1,0 +1,23 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { SingoutComponent } from './singout.component';
+
+describe('SingoutComponent', () => {
+  let component: SingoutComponent;
+  let fixture: ComponentFixture<SingoutComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [SingoutComponent]
+    })
+    .compileComponents();
+    
+    fixture = TestBed.createComponent(SingoutComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});

@@ -1,0 +1,215 @@
+<div class="payment-container">
+  <div class="payment-header">
+    <div class="security-badge">
+      <i class="fas fa-lock"></i>
+      <span>Pago Seguro</span>
+    </div>
+    <div class="processor-logos">
+      <img src="assets/icons/visa.svg" alt="Visa" class="processor-logo">
+      <img src="assets/icons/mastercard.svg" alt="Mastercard" class="processor-logo">
+      <!-- Removed Amex -->
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Validando link de pago...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="errorMessage && !loading" class="error-state">
+    <div class="error-icon">
+      <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <h3>Error en el pago</h3>
+    <p>{{ errorMessage }}</p>
+    <button class="btn btn-secondary" routerLink="/">Volver al inicio</button>
+  </div>
+
+  <!-- Payment Form -->
+  <div *ngIf="paymentData && !loading && !errorMessage" class="payment-content">
+    <!-- Payment Summary -->
+    <div class="payment-summary">
+      <h2>Resumen del Pago</h2>
+      <div class="summary-details">
+        <div class="summary-item">
+          <span>Concepto:</span>
+          <strong>{{ paymentData.concepto }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Comercio:</span>
+          <strong>{{ paymentData.merchant?.name_merchant }}</strong>
+        </div>
+        <div class="summary-item amount">
+          <span>Total a pagar:</span>
+          <strong>{{ paymentData.monto | currency:'MXN':'symbol':'1.2-2' }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div *ngIf="successMessage" class="success-message">
+      <div class="success-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <h3>¡Pago Exitoso!</h3>
+      <p>{{ successMessage }}</p>
+    </div>
+
+    <!-- Payment Form -->
+    <form *ngIf="!successMessage" [formGroup]="paymentForm" (ngSubmit)="processPayment()" class="payment-form">
+
+      <!-- Personal Information -->
+      <div class="form-section">
+        <h3><i class="fas fa-user"></i> Información Personal</h3>
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="nombre">Nombre completo del titular</label>
+            <input type="text" id="nombre" formControlName="nombre" placeholder="Como aparece en la tarjeta">
+            <div *ngIf="f['nombre'].touched && f['nombre'].errors" class="error-message">
+              <span *ngIf="f['nombre'].errors?.['required']">El nombre es requerido</span>
+              <span *ngIf="f['nombre'].errors?.['minlength']">El nombre debe tener al menos 3 caracteres</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="email">Correo electrónico</label>
+            <input type="email" id="email" formControlName="email" placeholder="tu@email.com">
+            <div *ngIf="f['email'].touched && f['email'].errors" class="error-message">
+              <span *ngIf="f['email'].errors?.['required']">El email es requerido</span>
+              <span *ngIf="f['email'].errors?.['email']">Formato de email inválido</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Address Information -->
+      <div class="form-section">
+        <h3><i class="fas fa-map-marker-alt"></i> Dirección</h3>
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="calle">Calle y número</label>
+            <input type="text" id="calle" formControlName="calle" placeholder="Av. Principal #123">
+            <div *ngIf="f['calle'].touched && f['calle'].errors" class="error-message">
+              <span *ngIf="f['calle'].errors?.['required']">La dirección es requerida</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ciudad">Ciudad</label>
+            <input type="text" id="ciudad" formControlName="ciudad" placeholder="Ciudad">
+            <div *ngIf="f['ciudad'].touched && f['ciudad'].errors" class="error-message">
+              <span *ngIf="f['ciudad'].errors?.['required']">La ciudad es requerida</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="pais">País</label>
+            <select id="pais" formControlName="pais">
+              <option value="MX">México</option>
+              <option value="US">Estados Unidos</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cp">Código Postal</label>
+            <input type="text" id="cp" formControlName="cp" placeholder="00000" maxlength="5">
+            <div *ngIf="f['cp'].touched && f['cp'].errors" class="error-message">
+              <span *ngIf="f['cp'].errors?.['required']">El código postal es requerido</span>
+              <span *ngIf="f['cp'].errors?.['pattern']">Formato inválido (5 dígitos)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Information -->
+      <div class="form-section">
+        <h3><i class="fas fa-credit-card"></i> Información de la Tarjeta</h3>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="tarjeta">Número de tarjeta</label>
+            <div class="card-input-container">
+              <input type="text" id="tarjeta" formControlName="tarjeta"
+                     placeholder="0000-0000-0000-0000"
+                     (input)="formatCardNumber($event)"
+                     (keyup)="detectCardNumber($event)"
+                     maxlength="19">
+              <img [src]="getCardIcon()" [alt]="cardType" class="card-type-icon">
+            </div>
+            <div *ngIf="f['tarjeta'].touched && f['tarjeta'].errors" class="error-message">
+              <span *ngIf="f['tarjeta'].errors?.['required']">El número de tarjeta es requerido</span>
+              <span *ngIf="f['tarjeta'].errors?.['pattern']">Formato inválido (XXXX-XXXX-XXXX-XXXX)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="venci">Fecha de vencimiento</label>
+            <input type="text" id="venci" formControlName="venci"
+                   placeholder="MM/AA"
+                   (input)="formatExpiry($event)"
+                   maxlength="5">
+            <div *ngIf="f['venci'].touched && f['venci'].errors" class="error-message">
+              <span *ngIf="f['venci'].errors?.['required']">La fecha de vencimiento es requerida</span>
+              <span *ngIf="f['venci'].errors?.['pattern']">Formato inválido (MM/AA)</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="cvv">CVV</label>
+            <input type="password" id="cvv" formControlName="cvv"
+                   placeholder="123"
+                   maxlength="4">
+            <div class="cvv-help">
+              <i class="fas fa-question-circle"
+                 title="Los 3 dígitos en el reverso de tu tarjeta (4 para American Express)"></i>
+            </div>
+            <div *ngIf="f['cvv'].touched && f['cvv'].errors" class="error-message">
+              <span *ngIf="f['cvv'].errors?.['required']">El CVV es requerido</span>
+              <span *ngIf="f['cvv'].errors?.['pattern']">Formato inválido (3 o 4 dígitos)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Features -->
+      <div class="security-features">
+        <div class="security-item">
+          <i class="fas fa-shield-alt"></i>
+          <span>Protegido con encriptación SSL</span>
+        </div>
+        <div class="security-item">
+          <i class="fas fa-lock"></i>
+          <span>Datos seguros</span>
+        </div>
+        <div class="security-item">
+          <i class="fas fa-user-shield"></i>
+          <span>Procesado por Selia</span>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="form-actions">
+        <button type="submit"
+                class="btn btn-primary btn-pay"
+                [disabled]="processing || paymentForm.invalid">
+          <span *ngIf="!processing">
+            Pagar {{ paymentData.monto | currency:'MXN':'symbol':'1.2-2' }}
+          </span>
+          <span *ngIf="processing">
+            <i class="fas fa-spinner fa-spin"></i>
+            Procesando pago...
+          </span>
+        </button>
+
+        <div class="payment-disclaimer">
+          <p>Al procesar este pago, aceptas los <a href="#">términos y condiciones</a> y la <a href="#">política de privacidad</a>.</p>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

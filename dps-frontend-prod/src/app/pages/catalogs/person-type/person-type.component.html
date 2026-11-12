@@ -1,0 +1,21 @@
+<section-title
+    title="Tipo de personas"
+    textBtn="Nuevo tipo de persona"
+    [linkText]="linkNewRow"
+    [canCreate]="canCreate"
+    >
+</section-title>
+<card-container>
+    <table-layout 
+        [dataTable]="personTypeData"
+        [actions]="actions" 
+        [showActions]="true" 
+        [actionsColumnIndex]="2"
+        [filter]="true"
+        >    
+    </table-layout>
+</card-container>
+<modal-confirm
+  (accept)="handleReject()" 
+  (reject)="handleAccept()">
+</modal-confirm>

@@ -1,0 +1,86 @@
+<section-title
+    [title]="title"
+    textBtn="Regresar"
+    [linkText]="linkText"
+    [canCreate]="true"
+    [icon]="'UNDO'"
+    >
+</section-title>
+<card-container class="grid w-full">
+    <div class="mb-6 flex items-center justify-between">
+        <text-title [text]="subtitle" size="xsmall" variant="secondary">
+        </text-title>
+        <div>
+            <form (submit)="$event.preventDefault()" action="" [formGroup]="newTDMFormGroup">
+                <app-input-switch label="Activo" formControlName="estado" size="lg"></app-input-switch>
+            </form>
+        </div>
+    </div>
+    <form (submit)="$event.preventDefault()" action="" class="grid md:grid-cols-6 gap-6" [formGroup]="newTDMFormGroup">
+        <div class="col-span-2">
+            <app-input-text
+                id="nombre"
+                label="Nombre"
+                [formControlName]="'name'"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-2">
+            <app-input-text
+                id="apellido-paterno"
+                label="Apellido Paterno"
+                [formControlName]="'apellido'"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-2">
+            <app-input-text
+                id="apellido-materno"
+                label="Apellido Materno"
+                [formControlName]="'apellido_2'"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-6">
+            <app-input-text
+                id="email"
+                label="Correo Electrónico"
+                [formControlName]="'email'"
+                [maxlength]="150"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-3">
+            <app-input-text
+                id="password"
+                label="Contraseña"
+                [formControlName]="'password'"
+                [type]="'password'"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-3">
+            <app-input-text
+                id="confirm-password"
+                label="Confirmar Contraseña"
+                [formControlName]="'retryPassword'"
+                [type]="'password'"
+                >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-6 flex justify-end">
+            <action-button
+                (click)="saveForm()"
+                class="mt-6"
+                text="Guardar"
+                [linkIcon]="'SAVE'">
+            </action-button>
+        </div>
+    </form>
+</card-container>

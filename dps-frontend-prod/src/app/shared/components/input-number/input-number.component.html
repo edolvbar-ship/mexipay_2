@@ -1,0 +1,28 @@
+<div class="mb-4 " *ngIf="variant === 'primary'">
+    <label [for]="id" class="block text-[14px]">
+        {{label}}
+    </label>
+    <div class="w-full">
+        <p-inputNumber
+            class="w-full p-inputtext"
+            [(ngModel)]="value1"
+            formControlName="value1!"
+            mode="currency" 
+            currency="USD" 
+        ></p-inputNumber>
+    </div>
+</div>
+
+<div class="mb-4" *ngIf="variant === 'secondary'">
+    <label [for]="id" class="block font-semibold text-primary">
+        {{label}}
+    </label>
+    <div class="w-full">
+        <p-inputNumber
+            class="w-full p-inputtext"
+            [(ngModel)]="value1"
+            mode="currency" 
+            currency="" 
+        ></p-inputNumber>
+    </div>
+</div>

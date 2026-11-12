@@ -1,0 +1,225 @@
+<div class="mcc-view-container">
+  <div style="background: red; color: white; padding: 20px; margin: 20px;">
+    <h1>VIEW COMPONENT TEST PAGE</h1>
+    <p>If you see this red box, the view component is loading!</p>
+    <button (click)="testDirectNavigation()">Test Button</button>
+  </div>
+
+  <!-- SHOW LISTING ONLY WHEN NO SPECIFIC MCC SELECTED -->
+  <div *ngIf="!selectedMcc">
+    <!-- Header -->
+    <div class="header-section">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="page-title">
+            <i class="fas fa-eye me-3"></i>
+            MCC Operations View
+          </h1>
+          <p class="page-subtitle">View operations for all Merchant Category Codes</p>
+        </div>
+        <div class="header-stats">
+          <div class="stat-card">
+            <div class="stat-number">{{ mccList.length }}</div>
+            <div class="stat-label">Total MCCs</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ getTotalOperations() }}</div>
+            <div class="stat-label">Total Operations</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-section mb-4">
+      <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search by MCC code or description..."
+          [(ngModel)]="searchTerm"
+          [ngModelOptions]="{ standalone: true }">
+      </div>
+    </div>
+
+    <!-- MCC Table -->
+    <div class="table-section">
+      <div class="table-container">
+        <table class="mcc-table">
+          <thead>
+            <tr>
+              <th class="col-mcc">MCC Code</th>
+              <th class="col-description">Description</th>
+              <th class="col-category">Category</th>
+              <th class="col-operations">Operations</th>
+              <th class="col-actions">Actions</th>
+            </tr>
+          </thead>
+        <tbody>
+          <!-- Loading State -->
+          <tr *ngIf="loading" class="loading-row">
+            <td colspan="5" class="text-center py-5">
+              <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p class="loading-text">Loading MCC codes...</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="!loading && mccList.length === 0" class="empty-row">
+            <td colspan="5" class="text-center py-5">
+              <div class="empty-state">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5 class="empty-title">No MCC codes found</h5>
+                <p class="empty-text">Try adjusting your search criteria</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- MCC Rows - Simplified for testing -->
+          <tr *ngFor="let mcc of mccList; trackBy: trackByMcc" class="mcc-row">
+            <td class="mcc-code">
+              <span class="mcc-badge">{{ mcc.mcc }}</span>
+            </td>
+            <td class="mcc-description">
+              <div class="description-content">
+                <div class="description-title">{{ mcc.description }}</div>
+                <div class="description-subtitle" *ngIf="mcc.category">
+                  {{ mcc.category.name }}
+                </div>
+              </div>
+            </td>
+            <td class="mcc-category">
+              <span class="category-badge" [ngClass]="getCategoryBadgeClass(mcc.category?.code)">
+                {{ mcc.category?.name || 'Uncategorized' }}
+              </span>
+            </td>
+            <td class="mcc-operations">
+              <div class="operations-count">
+                <span class="count-number" [class.has-operations]="mcc.operations_count > 0"
+                      [class.no-operations]="mcc.operations_count === 0">
+                  {{ mcc.operations_count }}
+                </span>
+                <span class="count-label">operations</span>
+              </div>
+            </td>
+            <td class="mcc-actions">
+              <div class="action-buttons">
+                <button class="btn-action btn-primary" (click="manageMcc(mcc)" title="Manage Operations">
+                  <i class="fas fa-cog"></i>
+                  Manage
+                </button>
+                <button class="btn-action btn-info" (click)="viewMcc(mcc)" title="View Details">
+                  <i class="fas fa-eye"></i>
+                  View
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    </div>
+  </div>
+
+  <!-- SHOW SPECIFIC MCC VIEW WHEN MCC IS SELECTED -->
+  <div *ngIf="selectedMcc">
+    <div class="details-panel" [class.active]="selectedMcc">
+    <div class="panel-header">
+      <div class="panel-title">
+        <h3>
+          <span class="mcc-highlight">{{ selectedMcc.mcc }}</span>
+          - {{ selectedMcc.description }}
+        </h3>
+        <button class="btn-close-panel" (click)="closeMccDetails()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-content">
+      <!-- MCC Info -->
+      <div class="mcc-info-section">
+        <div class="info-grid">
+          <div class="info-item">
+            <label>MCC Code</label>
+            <span class="info-value">{{ selectedMcc.mcc }}</span>
+          </div>
+          <div class="info-item">
+            <label>Category</label>
+            <span class="category-badge info-badge" [ngClass]="getCategoryBadgeClass(selectedMcc.category?.code)">
+              {{ selectedMcc.category?.name || 'Uncategorized' }}
+            </span>
+          </div>
+          <div class="info-item">
+            <label>Operations Count</label>
+            <span class="operations-badge info-badge">{{ selectedMcc.operations_count }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Operations View (Read-only) -->
+      <div class="operations-section">
+        <div class="section-header">
+          <h4>Assigned Operations</h4>
+          <div class="view-indicator">
+            <i class="fas fa-eye me-2"></i>
+            View Mode
+          </div>
+        </div>
+
+        <!-- Current Operations -->
+        <div class="current-operations">
+          <div *ngIf="loadingOperations" class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading operations...</p>
+          </div>
+
+          <div *ngIf="!loadingOperations && currentOperations.length === 0" class="empty-operations">
+            <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+            <p>No operations assigned to this MCC</p>
+          </div>
+
+          <div class="operations-grid" *ngIf="!loadingOperations && currentOperations.length > 0">
+            <div *ngFor="let operation of currentOperations" class="operation-card readonly">
+              <div class="operation-header">
+                <div class="operation-name">{{ operation.name }}</div>
+                <div class="operation-status">
+                  <i class="fas fa-lock text-muted"></i>
+                </div>
+              </div>
+              <div class="operation-details">
+                <div class="detail-item">
+                  <span class="detail-label">Code:</span>
+                  <code>{{ operation.operation_code }}</code>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Type:</span>
+                  <span class="badge-type">{{ operation.msg_type }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Amount:</span>
+                  <span class="badge-amount" [class.required]="operation.requires_amount">
+                    {{ operation.requires_amount ? 'Required' : 'Optional' }}
+                  </span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Tip:</span>
+                  <span class="badge-tip" [ngClass]="getTipBadgeClass(operation.requires_tip)">
+                    {{ getTipLabel(operation.requires_tip) }}
+                  </span>
+                </div>
+              </div>
+              <div class="operation-description">
+                {{ operation.description }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>

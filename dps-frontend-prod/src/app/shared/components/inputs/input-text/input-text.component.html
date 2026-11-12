@@ -1,0 +1,46 @@
+<div class="input-container">
+    <label *ngIf="label" [ngClass]="{'text-primary font-bold': variant == 'secondary'}"  class="block text-[14px] capitalize flex items-baseline">
+        <span class="truncate">{{ label }}</span><sup *ngIf="required"><i class="pi pi-asterisk text-red text-[0.5rem]" ></i></sup>
+    </label>
+    <section
+    class="flex items-center rounded-t-lg p-2 w-full font-normal text-[15px] text-black  border-b border-light-gray  m-0 relative"
+    [ngClass]="{
+        'border-red placeholder:text-red': isInvalid(),
+        'border-primary': isFocused
+        }"
+    >
+        <ng-content class="left-span">
+        </ng-content>
+        <input 
+        #input
+        [(ngModel)]="value"
+        [required]="required"
+        [disabled]="disabled"
+        [pattern]="pattern"
+        [placeholder]="placeholder"
+        [min]="min"
+        [max]="max"
+        [minlength]="minlength"
+        [maxlength]="maxlength"
+        [step]="step"
+        [type]="type"
+        (blur)="onBlur($event)"
+        (focus)="onFocus($event)"
+        (input)="onInput($event)" 
+        class="grow border-0 appearance-none outline-none ring-0 placeholder:text-gray focus:placeholder:text-gray"
+        />
+        <ng-content *ngIf="!isPassword" class="right-span">
+        </ng-content>
+        <span *ngIf="isPassword" class="ml-2 z-10" (click)="toogleType()">
+            <i *ngIf="type!='password'" class="pi pi-eye-slash"></i>
+            <i *ngIf="type=='password'" class="pi pi-eye"></i>
+        </span>
+        <div (click)="input.focus()" class="absolute bottom-2 bg-white left-1 text-red flex items-center w-full" [ngClass]="{'invisible': !isInvalid()}" >
+            <i class="pi pi-exclamation-circle text-lg pr-2" ></i>
+            <span class="truncate">
+                {{getError(control)}}
+            </span>
+        </div>
+    </section>
+</div>
+

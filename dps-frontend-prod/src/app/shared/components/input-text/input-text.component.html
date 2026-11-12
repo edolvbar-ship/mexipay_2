@@ -1,0 +1,38 @@
+<div class="input-container">
+  <label [for]="id" class="block text-[14px]">
+    {{ label }}
+  </label>
+  <input
+    [attr.type]="isNumericCase ? 'text' : type" 
+    [placeholder]="hasError || isRequired ? placeholderError(label) : placeholder"
+    [value]="value"
+    [attr.maxlength]="maxlength"
+    (input)="onInput($event)"
+    (blur)="onBlur()"
+    class="block rounded-t-lg p-2 w-full font-normal text-[15px] text-black border-0 border-b border-light-gray appearance-none focus:outline-none focus:ring-0 focus:border-primary m-0 placeholder:text-gray focus:placeholder:text-gray"
+    [ngClass]="{
+      'border-red placeholder:text-red': hasError || isRequired,
+      'placeholder:text-gray': !hasError && !isRequired
+    }"
+  />
+
+</div>
+<div class="mb-4" *ngIf="variant === 'secondary'">
+  <label [for]="id" class="block font-semibold text-primary">
+    {{label}}
+  </label>
+
+  <input
+    formControlName="formControlName"
+    [id]="id"
+    [type]="type"
+    [value]="value"
+    (input)="onInput($event)"
+    pKeyFilter="blockChars"
+    class="block rounded-t-lg p-2 w-full b-[1px] font-medium text-[15px] text-black text-xl border-0 border-b border-light-gray appearance-none focus:outline-none focus:ring-0 focus:border-primary m-0 focus:black"
+    [ngClass]="{'placeholder:text-red': hasError || isRequired, 'placeholder:text-ms': !hasError && !isRequired}"
+    [placeholder]="hasError || isRequired ? placeholderError(label) : (hasPlaceholder() ? placeholder : '')"
+    (blur)="onBlur()"
+  />
+</div>
+

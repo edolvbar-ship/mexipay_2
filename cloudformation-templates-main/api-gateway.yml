@@ -1,0 +1,1079 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'PCI DSS API Gateway for api.mexipay.com with JWT Authorization - Complete Nginx Route Mapping'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    Description: Environment tag (e.g., prod, qa)
+  
+  DomainName:
+    Type: String
+    Default: api.mexipay.com
+    Description: Custom domain name for API
+  
+  BackendLoadBalancerDNS:
+    Type: String
+    Description: DNS name of backend Elastic Beanstalk load balancer
+  
+  BackendLoadBalancerArn:
+    Type: String
+    Default: ""
+    Description: ARN of backend Network Load Balancer for VPC Link (optional - leave empty for HTTP integration)
+  
+  FrontendLoadBalancerDNS:
+    Type: String
+    Description: DNS name of frontend Elastic Beanstalk load balancer
+  
+  WAFWebACLArn:
+    Type: String
+    Default: ""
+    Description: ARN of WAF Web ACL from pci-waf stack (optional)
+  
+  HostedZoneId:
+    Type: String
+    Description: Route 53 hosted zone ID for taakpay.com.mx
+  
+  StageName:
+    Type: String
+    Default: prod
+    Description: API Gateway stage name
+  
+  JWTIssuer:
+    Type: String
+    Default: https://taakpay.com.mx
+    Description: JWT token issuer
+  
+  JWKSUrl:
+    Type: String
+    Default: https://taakpay.com.mx/.well-known/jwks.json
+    Description: JWKS endpoint for JWT verification
+
+Conditions:
+  HasVpcLink: !Not [!Equals [!Ref BackendLoadBalancerArn, ""]]
+  HasWAF: !Not [!Equals [!Ref WAFWebACLArn, ""]]
+
+Resources:
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub '${Environment}-mexipay-api'
+      Description: PCI DSS Payment Gateway API - Complete Route Mapping
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-mexipay-api'
+        - Key: PCI-DSS
+          Value: 'true'
+
+  # VPC Link for Backend Integration (optional)
+  BackendVpcLink:
+    Type: AWS::ApiGateway::VpcLink
+    Condition: HasVpcLink
+    Properties:
+      Name: !Sub '${Environment}-backend-vpc-link'
+      Description: VPC Link to backend load balancer
+      TargetArns:
+        - !Ref BackendLoadBalancerArn
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ============================================================================
+  # API RESOURCES - Mapping to Nginx Routes
+  # ============================================================================
+
+  # v1 Resource (Base path for all API routes)
+  V1Resource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: v1
+
+  # Gateway Resource
+  GatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref V1Resource
+      PathPart: gateway
+
+  # API Resource
+  ApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref V1Resource
+      PathPart: api
+
+  # TDM Resource
+  TdmResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref V1Resource
+      PathPart: tdm
+
+  # Payments Resource
+  PaymentsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref V1Resource
+      PathPart: payments
+
+  # Admin Resource
+  AdminResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref V1Resource
+      PathPart: admin
+
+  # Movements Resource
+  MovementsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref V1Resource
+      PathPart: movements
+
+  # ============================================================================
+  # GATEWAY API V2 RESOURCES (backend_admin)
+  # ============================================================================
+  GatewayApiV2Resource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref GatewayResource
+      PathPart: api
+
+  GatewayApiV2SubResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref GatewayApiV2Resource
+      PathPart: v2
+
+  GatewayApiV2Method:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref GatewayApiV2SubResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/gateway/api/v2'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: GatewayApiV2
+
+  # ============================================================================
+  # AUTH RESOURCES (backend_admin)
+  # ============================================================================
+  AuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref GatewayApiV2Resource
+      PathPart: auth
+
+  AuthGetTXAppResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AuthResource
+      PathPart: getTXApp
+
+  AuthGetTXAppMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref AuthGetTXAppResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/gateway/api/auth/getTXApp'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: GetTXApp
+
+  AuthGetLinksDataResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AuthResource
+      PathPart: getLinksData
+
+  AuthGetLinksDataMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref AuthGetLinksDataResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/gateway/api/auth/getLinksData'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: GetLinksData
+
+  AuthGenerateLinkPayoutResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AuthResource
+      PathPart: generateLinkPayout
+
+  AuthGenerateLinkPayoutMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref AuthGenerateLinkPayoutResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/gateway/api/auth/generateLinkPayout'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: GenerateLinkPayout
+
+  # ============================================================================
+  # GATEWAY V1 RESOURCES (backend_payment)
+  # ============================================================================
+  GatewayV1Resource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref GatewayResource
+      PathPart: v1
+
+  GatewayV1Method:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref GatewayV1Resource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/gateway/v1'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: GatewayV1
+
+  # ============================================================================
+  # PAYMENT CHARGE RESOURCES (backend_payment)
+  # ============================================================================
+  PaymentChargeResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref PaymentsResource
+      PathPart: charge
+
+  PaymentChargeMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref PaymentChargeResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/payments/'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: PaymentCharge
+
+  PaymentChargeAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref PaymentsResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/payments'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: PaymentsAny
+
+  # ============================================================================
+  # TDM API RESOURCES (backend_payment)
+  # ============================================================================
+  TdmApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref TdmResource
+      PathPart: api
+
+  TdmApiV1Resource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref TdmApiResource
+      PathPart: v1
+
+  TdmSmartRegisterResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref TdmApiV1Resource
+      PathPart: smart
+
+  TdmSmartRegisterSubResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref TdmSmartRegisterResource
+      PathPart: register
+
+  TdmSmartRegisterMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref TdmSmartRegisterSubResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/tdm/api/v1/smart/register'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: TdmSmartRegister
+
+  TdmTerminalResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref TdmApiV1Resource
+      PathPart: terminal
+
+  TdmTerminalGetOperationsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref TdmTerminalResource
+      PathPart: get_operations
+
+  TdmTerminalGetOperationsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref TdmTerminalGetOperationsResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/tdm/api/v1/terminal/get_operations'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: TdmTerminalGetOperations
+
+  TdmApiV1AnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref TdmApiV1Resource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/tdm/api/v1'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: TdmApiV1Any
+
+  # ============================================================================
+  # MOVEMENTS RESOURCES (backend_admin)
+  # ============================================================================
+  MovementsSummaryResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref MovementsResource
+      PathPart: summary
+
+  MovementsSummaryMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref MovementsSummaryResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/gateway/api/v2/movements/summary'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: MovementsSummary
+
+  MovementsAllResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref MovementsResource
+      PathPart: all
+
+  MovementsAllMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref MovementsAllResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/gateway/api/v2/movements/all'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: MovementsAll
+
+  # ============================================================================
+  # ADMIN RESOURCES (backend_admin)
+  # ============================================================================
+  ClientsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AdminResource
+      PathPart: clients
+
+  ClientsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref ClientsResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/clients'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: Clients
+
+  CatalogsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AdminResource
+      PathPart: catalogs
+
+  CatalogsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref CatalogsResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/catalogs'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: Catalogs
+
+  SecurityResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AdminResource
+      PathPart: security
+
+  SecurityMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref SecurityResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/security'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: Security
+
+  ProfileResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AdminResource
+      PathPart: profile
+
+  ProfileMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref ProfileResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/profile'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: Profile
+
+  MerchantsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AdminResource
+      PathPart: merchants
+
+  MerchantsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref MerchantsResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/merchants'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: Merchants
+
+  TerminalsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AdminResource
+      PathPart: terminals
+
+  TerminalsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref TerminalsResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/terminals'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: Terminals
+
+  CardTypesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AdminResource
+      PathPart: cardtypes
+
+  CardTypesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref CardTypesResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/cardtypes'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: CardTypes
+
+  ReportsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref AdminResource
+      PathPart: reports
+
+  ReportsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref ReportsResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/reports'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: Reports
+
+  GatewayMerchantResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref GatewayResource
+      PathPart: merchant
+
+  GatewayMerchantMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref GatewayMerchantResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/gateway/merchant'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: GatewayMerchant
+
+  # ============================================================================
+  # API RESOURCE (backend_payment)
+  # ============================================================================
+  ApiAnyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref ApiResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/api'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: ApiAny
+
+  # ============================================================================
+  # PROFILES MATRIX RESOURCE (backend_payment)
+  # ============================================================================
+  ProfilesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref ApiResource
+      PathPart: profiles
+
+  ProfilesMatrixResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !Ref ProfilesResource
+      PathPart: matrix
+
+  ProfilesMatrixMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref ProfilesMatrixResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${BackendLoadBalancerDNS}/api/profiles/matrix'
+        ConnectionType: !If [HasVpcLink, VPC_LINK, INTERNET]
+        ConnectionId: !If [HasVpcLink, !Ref BackendVpcLink, !Ref AWS::NoValue]
+      OperationName: ProfilesMatrix
+
+  # ============================================================================
+  # COGNITO AUTHORIZER
+  # ============================================================================
+  CognitoAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      RestApiId: !Ref RestApi
+      Name: !Sub '${Environment}-cognito-authorizer'
+      Type: COGNITO_USER_POOLS
+      IdentitySource: method.request.header.Authorization
+      ProviderARNs:
+        - !GetAtt CognitoUserPool.Arn
+      AuthorizerResultTtlInSeconds: 300
+
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub '${Environment}-mexipay-users'
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+      AutoVerifiedAttributes:
+        - email
+      MfaConfiguration: "OFF"
+      UserPoolTags:
+        PCI-DSS: 'Req 8.2'
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      ClientName: !Sub '${Environment}-mexipay-api-client'
+      GenerateSecret: true
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+
+  # ============================================================================
+  # API GATEWAY DEPLOYMENT
+  # ============================================================================
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - GatewayApiV2Method
+      - AuthGetTXAppMethod
+      - AuthGetLinksDataMethod
+      - AuthGenerateLinkPayoutMethod
+      - GatewayV1Method
+      - PaymentChargeMethod
+      - PaymentChargeAnyMethod
+      - TdmSmartRegisterMethod
+      - TdmTerminalGetOperationsMethod
+      - TdmApiV1AnyMethod
+      - MovementsSummaryMethod
+      - MovementsAllMethod
+      - ClientsMethod
+      - CatalogsMethod
+      - SecurityMethod
+      - ProfileMethod
+      - MerchantsMethod
+      - TerminalsMethod
+      - CardTypesMethod
+      - ReportsMethod
+      - GatewayMerchantMethod
+      - ApiAnyMethod
+      - ProfilesMatrixMethod
+    Properties:
+      RestApiId: !Ref RestApi
+
+  # ============================================================================
+  # API GATEWAY STAGE
+  # ============================================================================
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref RestApi
+      DeploymentId: !Ref ApiDeployment
+      StageName: !Ref StageName
+      Description: Production stage
+      CacheClusterEnabled: false
+      MethodSettings:
+        - ResourcePath: '/*'
+          HttpMethod: '*'
+          LoggingLevel: INFO
+          DataTraceEnabled: true
+          MetricsEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ============================================================================
+  # CUSTOM DOMAIN NAME
+  # ============================================================================
+  ApiDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: !Ref DomainName
+      RegionalCertificateArn: !Ref ApiCertificate
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  BasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    DependsOn:
+      - ApiDomainName
+      - ApiStage
+    Properties:
+      DomainName: !Ref ApiDomainName
+      RestApiId: !Ref RestApi
+      Stage: !Ref StageName
+      BasePath: v1
+
+  ApiDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApiDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt ApiDomainName.RegionalHostedZoneId
+
+  # ============================================================================
+  # WAF ASSOCIATION
+  # ============================================================================
+  WAFAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Condition: HasWAF
+    DependsOn: ApiStage
+    Properties:
+      ResourceArn: !Sub 'arn:aws:apigateway:${AWS::Region}::/restapis/${RestApi}/stages/${StageName}'
+      WebACLArn: !Ref WAFWebACLArn
+
+  # ============================================================================
+  # CLOUDWATCH LOGGING
+  # ============================================================================
+  ApiGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchRole.Arn
+
+  ApiGatewayCloudWatchRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+
+  # ============================================================================
+  # USAGE PLAN
+  # ============================================================================
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: ApiStage
+    Properties:
+      Description: Usage plan for API rate limiting
+      Quota:
+        Limit: 10000
+        Period: MONTH
+        Offset: 0
+      Throttle:
+        RateLimit: 100
+        BurstLimit: 200
+      ApiStages:
+        - ApiId: !Ref RestApi
+          Stage: !Ref StageName
+
+  ApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: !Sub '${Environment}-mexipay-api-key'
+      Description: API key for external integrations
+      Enabled: true
+    DependsOn: ApiStage
+
+  UsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+  # ============================================================================
+  # CLOUDWATCH ALARMS
+  # ============================================================================
+  Api5XXAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-api-5xx-alarm'
+      AlarmDescription: Alert on API 5XX errors
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref RestApi
+        - Name: Stage
+          Value: !Ref StageName
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref ApiNotificationTopic
+      TreatMissingData: notBreaching
+
+  ApiLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-api-latency-alarm'
+      AlarmDescription: Alert on high API latency
+      Namespace: AWS/ApiGateway
+      MetricName: Latency
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref RestApi
+        - Name: Stage
+          Value: !Ref StageName
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1000
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref ApiNotificationTopic
+      TreatMissingData: notBreaching
+
+  Api4XXAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-api-4xx-alarm'
+      AlarmDescription: Alert on API 4XX errors
+      Namespace: AWS/ApiGateway
+      MetricName: 4XXError
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref RestApi
+        - Name: Stage
+          Value: !Ref StageName
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 50
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref ApiNotificationTopic
+      TreatMissingData: notBreaching
+
+  ApiCountAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-api-count-alarm'
+      AlarmDescription: Alert on low API call count
+      Namespace: AWS/ApiGateway
+      MetricName: Count
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref RestApi
+        - Name: Stage
+          Value: !Ref StageName
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: LessThanThreshold
+      AlarmActions:
+        - !Ref ApiNotificationTopic
+      TreatMissingData: notBreaching
+
+  ApiNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${Environment}-api-notifications'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  RestApiId:
+    Description: API Gateway REST API ID
+    Value: !Ref RestApi
+    Export:
+      Name: !Sub '${Environment}-api-gateway-id'
+
+  RestApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}'
+    Export:
+      Name: !Sub '${Environment}-api-gateway-endpoint'
+
+  CustomDomainName:
+    Description: Custom domain name
+    Value: !Ref DomainName
+    Export:
+      Name: !Sub '${Environment}-api-domain-name'
+
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref CognitoUserPool
+    Export:
+      Name: !Sub '${Environment}-cognito-user-pool-id'
+
+  CognitoUserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref CognitoUserPoolClient
+    Export:
+      Name: !Sub '${Environment}-cognito-client-id'
+
+  ApiKey:
+    Description: API Key for external integrations
+    Value: !Ref ApiKey
+    Export:
+      Name: !Sub '${Environment}-api-key'
+
+  UsagePlanId:
+    Description: Usage Plan ID
+    Value: !Ref UsagePlan
+    Export:
+      Name: !Sub '${Environment}-usage-plan-id'

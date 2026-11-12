@@ -1,0 +1,11 @@
+input[type="checkbox"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;    
+    appearance: none;
+    background-color: #CFCFCF;
+}
+
+input[type="checkbox"]:checked {
+    accent-color:#0C4772;
+    background-color:#0C4772;
+}

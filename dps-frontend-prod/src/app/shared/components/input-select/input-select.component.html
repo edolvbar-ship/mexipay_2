@@ -1,0 +1,50 @@
+
+<div class="mb-4" *ngIf="variant === 'primary'">
+    <label [for]="id" class="block text-[14px]">
+        {{label}}
+    </label>
+    <div class="relative">
+        <select
+        [ngClass]="{
+            'text-red border-red': hasError && isRequired,
+            'placeholder:text-gray': !hasError && !isRequired
+        }"
+        (change)="handleChange($event)"
+        [id]="id"
+        class="block rounded-t-lg p-2 w-full b-[1px] font-normal text-[15px] text-black border-0 border-b border-light-gray appearance-none focus:outline-none focus:ring-0 focus:border-primary m-0  focus:black"
+        [attr.required]="required ? true : null" >
+        <option value="" *ngIf="dynamicSelectedOption === 0 || !dynamicSelectedOption" disabled selected>
+            Selecciona una opción
+        </option>
+        <option *ngFor="let option of options" [value]="option.id" [selected]="option.id === dynamicSelectedOption">
+                {{ option.option }}
+        </option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pt-2 text-gray w-3">
+            <img src="../../../../assets/core-icons/ico-down.svg" alt="">
+        </div>
+    </div>
+</div>
+
+<div class="mb-4" *ngIf="variant === 'secondary'">
+    <label [for]="id" class="block font-semibold text-primary">
+        {{label}}
+    </label>
+    <div class="relative">
+        <select
+            (change)="handleChange($event)"
+            [id]="id"
+            class="block h-full rounded-t-lg p-2 w-full b-[1px] text-xl font-medium border-0 border-b border-light-gray appearance-none focus:outline-none focus:ring-0 focus:border-primary"
+            [attr.required]="required ? true : null">
+            <option value="" *ngIf="dynamicSelectedOption === 0 || !dynamicSelectedOption" disabled selected>
+                Selecciona una opción
+            </option>
+            <option *ngFor="let option of options" [value]="option.id" [selected]="option.id === dynamicSelectedOption">
+                    {{ option.option }}
+            </option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pt-6 text-gray w-3">
+            <img src="../../../../assets/core-icons/ico-down.svg" alt="">
+        </div>
+    </div>
+</div>

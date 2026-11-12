@@ -1,0 +1,9 @@
+<section-title title="Movimientos - Tickets">
+</section-title>
+<card-container>
+    <table-layout [dataTable]="tickets" [customActions]="customActions" [filter]="true">
+        <div firstFIeld class="mr-8">
+            <app-calendar #calendarRef [rangeDates]="initialDates" (dateEmitted)="handleDates($event)"></app-calendar>   
+        </div>
+    </table-layout>
+</card-container>

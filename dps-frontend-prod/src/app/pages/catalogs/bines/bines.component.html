@@ -1,0 +1,20 @@
+<section-title
+    title="Listado de Bines"
+    textBtn="Nuevo Bin"
+    [linkText]="linkNewRow"
+    >
+</section-title>
+<card-container>
+    <table-layout 
+        [dataTable]="binesData"
+        [actions]="actions" 
+        [showActions]="true" 
+        [actionsColumnIndex]="2"
+        [filter]="true"
+        >    
+    </table-layout>
+</card-container>
+<modal-confirm
+  (accept)="handleReject()" 
+  (reject)="handleAccept()">
+</modal-confirm>

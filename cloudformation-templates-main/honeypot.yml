@@ -1,0 +1,438 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'PCI DSS Honeypot for Security Scanning Detection'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    Description: Environment tag (e.g., prod, qa)
+  
+  VpcId:
+    Type: String
+    Description: VPC ID from pci-app-infrastructure stack
+  
+  PublicSubnet1Id:
+    Type: String
+    Description: Public subnet ID for honeypot placement
+  
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    Description: Honeypot EC2 instance type
+  
+  KeyName:
+    Type: String
+    Default: ""
+    Description: EC2 key pair name for SSH access (optional)
+  
+  NotificationEmail:
+    Type: String
+    Default: andres.gtz@programmer.city
+    Description: Email for security alerts
+  
+  HoneypotAMI:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Description: SSM parameter path for Amazon Linux 2 AMI (auto-resolves per region)
+
+Conditions:
+  HasKeyPair: !Not [!Equals [!Ref KeyName, ""]]
+
+Resources:
+  # Honeypot Security Group - Allow all traffic for detection
+  HoneypotSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Honeypot Security Group - Allow all traffic for scanning detection
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all traffic for honeypot
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-honeypot-sg'
+        - Key: PCI-DSS
+          Value: 'true'
+        - Key: Security
+          Value: 'Honeypot'
+
+  # IAM Role for Honeypot
+  HoneypotRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: HoneypotLogging
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group/${Environment}-honeypot-*'
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !Sub '${HoneypotLogBucket.Arn}/*'
+        - PolicyName: HoneypotGuardDuty
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - guardduty:CreateSampleFindings
+                  - guardduty:CreateIPSet
+                  - guardduty:CreateThreatIntelSet
+                Resource: '*'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: PCI-DSS
+          Value: 'true'
+
+  HoneypotInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref HoneypotRole
+
+  # Honeypot EC2 Instance
+  HoneypotInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref HoneypotAMI
+      InstanceType: !Ref InstanceType
+      KeyName: !If [HasKeyPair, !Ref KeyName, !Ref AWS::NoValue]
+      SubnetId: !Ref PublicSubnet1Id
+      SecurityGroupIds:
+        - !Ref HoneypotSecurityGroup
+      IamInstanceProfile: !Ref HoneypotInstanceProfile
+      Monitoring: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-honeypot'
+        - Key: PCI-DSS
+          Value: 'true'
+        - Key: Security
+          Value: 'Honeypot'
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          # Install honeypot software
+          yum update -y
+          yum install -y docker
+          service docker start
+          usermod -aG docker ec2-user
+          
+          # Configure logging
+          # Log all connection attempts
+          iptables -A INPUT -j LOG --log-prefix "HONEYPOT: "
+          
+          # Start honeypot container (example - replace with actual honeypot)
+          docker run -d --name honeypot -p 80:80 -p 443:443 -p 22:22 \
+            -v /var/log/honeypot:/var/log/honeypot \
+            honeytrap/honeytrap:latest
+          
+          # Configure CloudWatch agent
+          yum install -y amazon-cloudwatch-agent
+          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+            -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/config.json
+
+  # S3 Bucket for Honeypot Logs
+  HoneypotLogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${Environment}-honeypot-logs-${AWS::AccountId}-${AWS::Region}'
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+        - Id: ExpireLogs
+          Prefix: ''
+          Status: Enabled
+          ExpirationInDays: 90
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: PCI-DSS
+        Value: 'true'
+      - Key: Security
+        Value: 'Honeypot'
+
+  HoneypotLogBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref HoneypotLogBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: cloudwatch.amazonaws.com
+          Action: s3:PutObject
+          Resource: !Sub '${HoneypotLogBucket.Arn}/*'
+          Condition:
+            StringEquals:
+              s3:x-amz-acl: bucket-owner-full-control
+
+  # CloudWatch Log Group
+  HoneypotLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/ec2/${Environment}-honeypot'
+      RetentionInDays: 30
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # CloudWatch Alarms
+  HoneypotConnectionAttemptsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-honeypot-connection-attempts-alarm'
+      AlarmDescription: Alert on high connection attempts to honeypot
+      Namespace: HoneypotMetrics
+      MetricName: ConnectionAttempts
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 100
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref HoneypotNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  HoneypotPortScanAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-honeypot-port-scan-alarm'
+      AlarmDescription: Alert on port scanning activity
+      Namespace: HoneypotMetrics
+      MetricName: PortScans
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 50
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref HoneypotNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  HoneypotBruteForceAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-honeypot-brute-force-alarm'
+      AlarmDescription: Alert on brute force attempts
+      Namespace: HoneypotMetrics
+      MetricName: BruteForceAttempts
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref HoneypotNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  HoneypotCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-honeypot-cpu-alarm'
+      AlarmDescription: Alert on high honeypot CPU usage
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref HoneypotInstance
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref HoneypotNotificationTopic
+      TreatMissingData: notBreaching
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  HoneypotNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${Environment}-honeypot-security-alerts'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Security
+          Value: 'Honeypot'
+
+  # SNS Subscription for email notifications
+  HoneypotEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      TopicArn: !Ref HoneypotNotificationTopic
+      Endpoint: !Ref NotificationEmail
+
+  # Lambda Function for Honeypot Log Analysis
+  HoneypotAnalysisLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-honeypot-log-analyzer'
+      Runtime: python3.14
+      Handler: index.lambda_handler
+      Role: !GetAtt HoneypotLambdaRole.Arn
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          S3_BUCKET: !Ref HoneypotLogBucket
+          SNS_TOPIC: !Ref HoneypotNotificationTopic
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          
+          def lambda_handler(event, context):
+              s3 = boto3.client('s3')
+              sns = boto3.client('sns')
+              
+              # Analyze honeypot logs
+              # This is a placeholder - implement actual analysis logic
+              # Detect patterns: port scans, brute force, exploit attempts
+              
+              # If suspicious activity detected, send alert
+              suspicious_activity = False
+              alert_message = "Honeypot detected suspicious activity"
+              
+              if suspicious_activity:
+                  sns.publish(
+                      TopicArn=os.environ['SNS_TOPIC'],
+                      Message=alert_message,
+                      Subject='Honeypot Security Alert'
+                  )
+              
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('Analysis complete')
+              }
+
+  HoneypotLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: HoneypotLambdaS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub '${HoneypotLogBucket.Arn}'
+                  - !Sub '${HoneypotLogBucket.Arn}/*'
+        - PolicyName: HoneypotLambdaSNSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref HoneypotNotificationTopic
+
+  # EventBridge Rule for Scheduled Log Analysis
+  HoneypotAnalysisRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub '${Environment}-honeypot-log-analysis'
+      Description: Scheduled honeypot log analysis
+      ScheduleExpression: 'rate(5 minutes)'
+      Targets:
+        - Arn: !GetAtt HoneypotAnalysisLambda.Arn
+          Id: HoneypotAnalysisTarget
+
+  HoneypotAnalysisPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref HoneypotAnalysisLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt HoneypotAnalysisRule.Arn
+
+Outputs:
+  HoneypotInstanceId:
+    Description: Honeypot EC2 instance ID
+    Value: !Ref HoneypotInstance
+    Export:
+      Name: !Sub '${Environment}-honeypot-instance-id'
+
+  HoneypotPublicIP:
+    Description: Honeypot public IP address
+    Value: !GetAtt HoneypotInstance.PublicIp
+    Export:
+      Name: !Sub '${Environment}-honeypot-public-ip'
+
+  HoneypotSecurityGroupId:
+    Description: Honeypot security group ID
+    Value: !Ref HoneypotSecurityGroup
+    Export:
+      Name: !Sub '${Environment}-honeypot-sg-id'
+
+  HoneypotLogBucketName:
+    Description: Honeypot log bucket name
+    Value: !Ref HoneypotLogBucket
+    Export:
+      Name: !Sub '${Environment}-honeypot-log-bucket'
+
+  HoneypotNotificationTopicArn:
+    Description: Honeypot notification topic ARN
+    Value: !Ref HoneypotNotificationTopic
+    Export:
+      Name: !Sub '${Environment}-honeypot-notification-topic'

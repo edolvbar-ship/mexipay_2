@@ -1,0 +1,26 @@
+<div class="input-container" class="relative">
+    <label *ngIf="label" [ngClass]="{'text-primary': variant == 'secondary'}"  class="block text-[14px] capitalize flex items-baseline">
+        <span class="truncate">{{ label }}</span><sup *ngIf="required"><i class="pi pi-asterisk text-red text-[0.5rem]" ></i></sup>
+    </label>
+    <textarea 
+    #input
+    [(ngModel)]="value"
+    [required]="required"
+    [pattern]="pattern"
+    [minlength]="minlength"
+    [maxlength]="maxlength"
+    (blur)="onBlur($event)"
+    (focus)="onFocus($event)"
+    (input)="onInput($event)" 
+    class="block rounded-t-lg p-2 w-full font-normal text-[15px] text-black border-0 border-b border-light-gray appearance-none focus:outline-none focus:ring-0 focus:border-primary m-0 placeholder:text-gray focus:placeholder:text-gray"
+    [ngClass]="{
+        'border-red placeholder:text-red': isInvalid()
+        }"
+    ></textarea>
+    <div (click)="input.focus()" class="absolute bottom-2 bg-white left-1 text-red flex items-center" [ngClass]="{'invisible': !isInvalid()}" >
+        <i class="pi pi-exclamation-circle text-lg pr-2" ></i>
+        <span class="truncate">
+            {{getError(control)}}
+        </span>
+    </div>
+</div>

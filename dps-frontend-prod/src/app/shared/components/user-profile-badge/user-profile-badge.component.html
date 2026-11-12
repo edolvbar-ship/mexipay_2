@@ -1,0 +1,66 @@
+<div class="flex gap-4 items-center cursor-pointer" (click)="switchToggle()">
+    <div
+        class="size-12 bg-primary rounded-full flex justify-center items-center">
+        <text-title
+            text={{capitalName}}
+            size="large"
+            variant="tertiary">
+        </text-title>
+    </div>
+    <div>
+        <text-title
+            text={{name}}
+            size="regular"
+            variant="secondary">
+        </text-title>
+        <text-type
+            text={{userName}}
+            size="small"
+            variant="disable">
+        </text-type>
+        <div class="flex items-center gap-2 mt-1">
+            <span *ngIf="role" class="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded">{{role}}</span>
+            <span *ngIf="isAdmin" class="text-xs text-white bg-red-500 px-2 py-0.5 rounded font-semibold">ADMIN</span>
+        </div>
+    </div>
+    <div class="">
+        <div class="relative">
+        <i class="pi pi-angle-down"></i>
+    </div>
+    <div *ngIf="isVisible" class="absolute z-50 right-8">
+        <div class="bg-white w-56 rounded-lg py-3 shadow-lg shadow-light-primary">
+            <div class="px-4 pb-3 border-b border-light-gray">
+                <div class="flex items-center gap-2 mb-1">
+                    <span *ngIf="role" class="text-xs text-gray-600">{{role}}</span>
+                    <span *ngIf="isAdmin" class="text-xs text-white bg-red-500 px-2 py-0.5 rounded font-semibold">ADMIN</span>
+                </div>
+                <div class="text-xs text-gray-500">
+                    {{resourceCount}} recursos disponibles
+                </div>
+            </div>
+            <div
+                class="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                (click)="detailAccount(); switchToggle()">
+                <text-type
+                class="hover:text-primary hover:font-bold"
+                [text]="'Cuenta'"
+                ></text-type>
+            </div>
+            <div class="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                (click)="activities()">
+                <text-type
+                class="hover:text-primary hover:font-bold"
+                [text]="'Actividades'"
+                ></text-type>
+            </div>
+            <div class="border-t border-light-gray px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                (click)="logOut()">
+                <text-type
+                class="hover:text-primary hover:font-bold"
+                [text]="'Cerrar Sesión'"
+                ></text-type>
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,22 @@
+<div class="flex justify-content-center">
+    <p-dialog 
+        [modal]="true" 
+        [draggable]="false"
+        [(visible)]="visible"
+        [baseZIndex]="1000"
+        [style]="{
+            'background-color': 'white', 
+            'padding': '2rem', 
+            'box-shadow': '0 4px 20px rgba(97, 62, 206, 0.3)', 
+            'border-radius': '10px', 
+            'height': 'auto',
+            'max-width': '90vw',
+            'max-height': '90vh',
+            'overflow': 'hidden'}">
+        <ng-content select="[dialogHeader]"></ng-content>
+        <div dialogContent class="w-full h-full" style="overflow: hidden">
+            <ng-content select="[dialogContent]"></ng-content>
+        </div>
+        <ng-content select="[dialogFooter]"></ng-content>
+    </p-dialog>
+</div>

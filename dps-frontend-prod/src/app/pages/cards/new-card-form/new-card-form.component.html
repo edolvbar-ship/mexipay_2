@@ -1,0 +1,92 @@
+<section-title
+    [title]="sectionTitle"
+    subHead="Prefijos por Banco Emisor"
+    [canCreate]="true"
+    [textBtn]="'Regresar'"
+    [linkText]="linkText"
+    [icon]="'UNDO'"
+    >
+</section-title>
+<card-container>
+    <form (submit)="$event.preventDefault()" action="" [formGroup]="formGroup">
+        <div>
+
+            <div class="grid lg:grid-cols-3 lg:space-x-24 mb-6">
+
+                <app-input-text
+                    id="prefix"
+                    label="Prefijo (BIN)"
+                    [maxlength]="10"
+                    [formControlName]="'bin'"
+                >
+                </app-input-text>
+
+    
+                <app-input-select
+                    id="''"
+                    type="text"
+                    label="Banco"
+                    [formControlName]="'id_issbank'"
+                    [options]="banks"
+                >
+                </app-input-select>
+                <app-input-select
+                    id="''"
+                    label="Tipo"
+                    [formControlName]="'id_card_type'"
+                    [options]="types"
+                    class=""
+                >
+                </app-input-select>
+            </div>
+
+            <div class="grid lg:grid-cols-3 lg:space-x-24 mb-6">
+                <app-input-select
+                    id="''"
+                    label="Marca"
+                    [formControlName]="'id_brand'"
+                    [options]="brands"
+                    class=""
+                >
+                </app-input-select>
+                <app-input-select
+                    id="''"
+                    type="text"
+                    label="Producto"
+                    [formControlName]="'id_card_product'"
+                    [options]="products"
+                    class=""
+                >
+                </app-input-select>
+                <app-input-select
+                    id="''"
+                    label="Procesador"
+                    [formControlName]="'id_processor'"
+                    [options]="processors"
+                    class=""
+                >
+                </app-input-select>
+            </div>
+            <div class="grid lg:grid-cols-3 lg:space-x-24 mb-6 relative h-full">
+                <app-input-select
+                    id="''"
+                    label="Protección 3DS"
+                    [formControlName]="'tresDS'"
+                    [options]="tresDsOptions"
+                    class="lg:col-span-1"
+                >
+                </app-input-select>
+                <div class="lg:col-span-1 lg:col-start-3 md:relative flex flex-col justify-between h-full">
+                    <div class="flex-grow"></div>
+                    <action-button
+                        (click)="saveForm()"
+                        class="mt-6 self-end"  
+                        text="Guardar"
+                        [linkIcon]="'SAVE'">
+                    </action-button>
+                </div>
+            </div>
+            
+        </div>
+    </form>
+</card-container>

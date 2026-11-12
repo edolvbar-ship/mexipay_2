@@ -1,0 +1,57 @@
+<section-title
+title="Estado de cuenta">
+</section-title>
+<card-container class="p-6" >
+
+    <text-title
+        text=""
+        size="medium">
+    </text-title>
+    <text-type
+        text="Obtener Arvchivos de Estado de Cuenta.">
+    </text-type>
+
+    <form (submit)="$event.preventDefault()" action="" [formGroup]="formGroup">
+        <div class="w-full grid md:grid-cols-1 lg:grid-cols-3 py-10">
+
+            <div class="px-5 py-3">
+                <app-input-select
+                    id="month"
+                    label="Mes"
+                    [formControlName]="'month'"
+
+                    class="w-full flex-grow"
+                    >
+                    <option disabled selected value="">
+                        <span class="capitalize">Seleccione un mes</span>
+                    </option>
+                    <option *ngFor="let month of months " [value]="month.id">
+                        <span class="capitalize">{{ month.option }}</span>
+                    </option>
+                </app-input-select>
+            </div>
+
+            <div class="px-5 py-3">
+                <app-input-select
+                    id="merchant"
+                    label="Comercio"
+                    [formControlName]="'merchant'"
+                    [options]="merchants"
+                    class="w-full flex-grow"
+                    >
+                </app-input-select>
+            </div>
+
+            <div class="px-5 flex justify-center items-center py-3">
+                <action-button
+                (click)="getFile()"
+                [text]="'Descargar'"
+                [linkIcon]="'DOWNLOAD'"
+                ></action-button>
+            </div>
+
+
+        </div>
+    </form>
+
+</card-container>

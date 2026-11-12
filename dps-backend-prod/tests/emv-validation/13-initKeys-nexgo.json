@@ -1,0 +1,24 @@
+{
+  "testName": "initKeys - Nexgo N860 Key Exchange (Selia tx 506)",
+  "description": "Sends initKeys request with RSA-encrypted transport key for Nexgo terminal. Tests Selia key init flow (tx 506, Token ES/EW/EX) and verifies DUKPT IPEK is returned.",
+  "expectedResult": "PASS",
+  "endpoint": "/gateway/v1/initKeys",
+  "headers": {
+    "commerce-id": "9953404",
+    "commerce-name": "MEX CARLS PRUEBAS",
+    "x-time": "1752345600",
+    "tkr": "1772227887978xaD",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "device": {
+      "serial": "N860W176266",
+      "model": "N860",
+      "manufacturer": "nexgo"
+    },
+    "rsa": "50428feae4d62310ef3cf98e35721418b3bc920753be92b906786ed09aef85107a55ff9caf602aea04920981b5e29620ecd6a6b239d1036713478270bd0b633fa631be7bbe6410868b135aa8661cfb333e14c0d0443c33da2d7d67f1c5518d225bf0ae51d494f5436407f371019689e88c0c8faa2ce5c778fed2538d69618cd1e9f41d9864bb8ee593fd76056987294a34c41a1612f80cf59179cc82fcc3c2929050d139d18edb7ad466ccb0ed918b45ca2136514bcecbdbf40ad8302789c109f585eca99d1c2a078c7c67b505e8d79d0eaeda68e82ac712b54587f3ef3ac149566d84d9f6592a92961cfc561426dc295e21250655b689f53461b7603e7ce9b4",
+    "check_value": "E44055",
+    "rsa_name": "A000BZPY72",
+    "isoType": "PROSA"
+  }
+}

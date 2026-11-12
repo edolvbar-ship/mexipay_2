@@ -1,0 +1,177 @@
+<div class="activities-container">
+  <div class="header">
+    <h2>{{ isAdmin ? 'All Activities' : 'My Activities' }}</h2>
+    <div class="summary">
+      <span class="total-count">Total: {{ total }} activities</span>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="filters-header">
+      <h3>Filters</h3>
+      <button class="clear-btn" (click)="clearFilters()">Clear All</button>
+    </div>
+    
+    <div class="filters-grid">
+      <!-- Search -->
+      <div class="filter-group">
+        <label for="search">Search</label>
+        <input 
+          type="text" 
+          id="search" 
+          [(ngModel)]="filters.search" 
+          placeholder="Search in action, method, URL..."
+          class="filter-input"
+        >
+      </div>
+
+      <!-- Action Type -->
+      <div class="filter-group">
+        <label for="action">Action Type</label>
+        <select id="action" [(ngModel)]="filters.action" class="filter-select">
+          <option value="">All Actions</option>
+          <option *ngFor="let action of actionTypes" [value]="action">
+            {{ action }}
+          </option>
+        </select>
+      </div>
+
+      <!-- HTTP Method -->
+      <div class="filter-group">
+        <label for="method">HTTP Method</label>
+        <select id="method" [(ngModel)]="filters.method" class="filter-select">
+          <option value="">All Methods</option>
+          <option *ngFor="let method of methods" [value]="method">
+            {{ method }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Status Code -->
+      <div class="filter-group">
+        <label for="statusCode">Status Code</label>
+        <select id="statusCode" [(ngModel)]="filters.statusCode" class="filter-select">
+          <option value="">All Statuses</option>
+          <option *ngFor="let code of statusCodes" [value]="code">
+            {{ code }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Date Range -->
+      <div class="filter-group">
+        <label for="startDate">Start Date</label>
+        <input 
+          type="datetime-local" 
+          id="startDate" 
+          [(ngModel)]="filters.startDate" 
+          class="filter-input"
+        >
+      </div>
+
+      <div class="filter-group">
+        <label for="endDate">End Date</label>
+        <input 
+          type="datetime-local" 
+          id="endDate" 
+          [(ngModel)]="filters.endDate" 
+          class="filter-input"
+        >
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button class="apply-btn" (click)="applyFilters()" [disabled]="loading">
+        Apply Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading activities...</p>
+  </div>
+
+  <!-- Activities Table -->
+  <div *ngIf="!loading" class="table-container">
+    <table class="activities-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Action</th>
+          <th>Method</th>
+          <th>URL</th>
+          <th>Status</th>
+          <th>IP Address</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let activity of activities" class="activity-row">
+          <td class="user-cell">
+            <div class="user-info">
+              <span class="user-email">{{ activity.user?.mail || 'N/A' }}</span>
+              <span class="user-name">{{ activity.user?.name || '' }}</span>
+            </div>
+          </td>
+          <td class="action-cell">
+            <span class="action-badge" [ngClass]="'action-' + activity.action?.toLowerCase()">
+              {{ activity.action }}
+            </span>
+          </td>
+          <td class="method-cell">
+            <span class="method-badge" [ngClass]="'method-' + activity.method?.toLowerCase()">
+              {{ activity.method }}
+            </span>
+          </td>
+          <td class="url-cell">
+            <span class="url-text" [title]="activity.url">
+              {{ activity.url }}
+            </span>
+          </td>
+          <td class="status-cell">
+            <span class="status-badge" [ngClass]="getStatusClass(activity.statusCode)">
+              {{ activity.statusCode }}
+            </span>
+          </td>
+          <td class="ip-cell">{{ activity.ipAddress }}</td>
+          <td class="date-cell">{{ activity.created_at | date:'short' }}</td>
+        </tr>
+        <tr *ngIf="activities.length === 0" class="no-results">
+          <td colSpan="7" class="no-data">
+            <div class="no-data-content">
+              <p>No activities found matching your criteria.</p>
+              <button class="clear-btn" (click)="clearFilters()">Clear filters</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="!loading && totalPages > 0" class="pagination">
+    <div class="pagination-info">
+      <span>Page {{ page }} of {{ totalPages }}</span>
+      <span class="total-records">({{ total }} total records)</span>
+    </div>
+    <div class="pagination-controls">
+      <button 
+        class="pagination-btn" 
+        [disabled]="page === 1 || loading" 
+        (click)="previousPage()"
+      >
+        Previous
+      </button>
+      <button 
+        class="pagination-btn" 
+        [disabled]="page >= totalPages || loading" 
+        (click)="nextPage()"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,17 @@
+<div class="w-28 relative flex items-center h-8">
+    <span class="absolute z-40 start-3">
+        <i class="pi pi-calendar"></i>
+    </span>
+    <p-date-picker
+        (onSelect)="onDateSelect($event)"
+        [(ngModel)]="selectedDate"
+        [view]="options.view"
+        [numberOfMonths]="options.numberOfMonths"
+        dateFormat="mm/dd/yy" class="w-full h-full z-41"
+        [maxDate]="maxDate"
+        >
+    </p-date-picker>
+    <span class="absolute z-40 end-2">
+        <i class="pi pi-angle-down"></i>
+    </span>
+</div>

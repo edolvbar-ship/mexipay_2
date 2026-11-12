@@ -1,0 +1,47 @@
+<div class="mb-7 flex item-center">
+    <header-table-search
+    class="w-full"
+    [dataService]="dataTable" />
+    <div class="flex item-center">
+        <div>
+        <ng-content select="[firstFIeld]">
+
+        </ng-content>
+    </div>
+    <div *ngIf ="filter">
+        <button-filter
+        [dataList]="dataList"
+        (deselectionChange)="handleSelectionChange($event)"
+        ></button-filter>
+    </div>
+    <div>
+        <ng-content select="[secondFIeld]">
+
+        </ng-content>
+    </div>
+    </div>
+    
+</div>
+<div class="w-full">
+    <basic-table
+    [values]="dataTable"
+    [rows]="rows"
+    [first]="first"
+    [page]="page"
+    [actions]="actions" 
+    [showActions]="showActions" 
+    [customActions]="customActions"
+    [actionsColumnIndex]="actionsColumnIndex"
+    (rowSelected)="onRowSelected($event)"
+    [hiddenColumns]="hiddenColumns"
+    [columnsWithSum]="columnsWithSum"
+/>
+</div>
+
+
+
+<table-footer
+    [data]="dataTable"
+    (paginationData)="handlePaginationTable($event)"
+    (updatePaginationData)="handlePaginationTable($event)"
+/>

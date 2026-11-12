@@ -1,0 +1,53 @@
+::ng-deep .p-dialog-mask.p-component-overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+::ng-deep .p-dialog {
+    background-color: var(--white);
+    border-radius: 10px;
+    color: var(--black);
+    display: flex;
+    flex-direction: column; 
+    justify-content: center;
+    padding: 54px 70px;; 
+}
+
+
+::ng-deep .p-dialog-header .p-dialog-title{
+    font-size: 20px;
+    font-weight: 700;
+}
+
+::ng-deep .p-dialog-content{
+    font-size: 18px;
+    margin-bottom: 32px;
+}
+
+::ng-deep .p-confirm-dialog .p-button {
+    border-radius: 150px; 
+    width: 130px;
+    height: 32PX;
+    background-color: var(--white);
+    border-color: var(--black);
+    border-width: 1px;
+    outline: none;
+}
+
+::ng-deep .p-confirm-dialog .p-button:first-of-type {
+    margin-right: 48px;
+    background-color: var(--primary);
+    color: var(--white);
+}
+
+::ng-deep .p-confirm-dialog .p-button:hover,
+::ng-deep .p-confirm-dialog .p-button:active {
+    color: var(--primary);
+    background-color: var(--light-primary);
+    border-color: var(--primary);
+    border-width: 1px;
+    outline: none;
+}
+
+::ng-deep .p-dialog-header-icons .p-dialog-header-icon {
+    display: none;
+}

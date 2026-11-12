@@ -1,0 +1,127 @@
+::ng-deep p-calendar .p-inputtext{
+    background-color: var(--white);
+    border-radius: 50px;
+    height: 32px;
+    width: 210px;
+    border-width: 1px;
+    border-color: var(--gray);
+    text-align: center;
+    color: var(--gray);
+    font-size: 13px;
+}
+
+::ng-deep p-calendar .p-inputtext:hover{
+    outline: none;
+    border-color: var(--primary);
+    border-width: 1px;
+    background-color: var(--light-primary);
+}
+
+::ng-deep p-calendar .p-inputtext:focus{
+    outline: none;
+    border-color: var(--primary);
+    border-width: 2px;
+}
+
+::ng-deep p-calendar .p-hidden-accessible {
+    display: none !important; 
+    visibility: hidden !important;
+    position: absolute !important;
+}
+::ng-deep p-calendar .p-datepicker {
+    background-color: var(--primary);
+    box-shadow: 0 4px 6px -1px var(--light-primary), 0 2px 4px -2px var(--primary);
+    border-radius: 5px;
+}
+::ng-deep p-calendar .p-datepicker-header {
+    color: var(--gray)
+}
+
+::ng-deep p-calendar .p-datepicker-title{
+    color: var(--black);
+    font-size: 18px;
+    margin: 10px;
+    font-weight: 700;
+}
+
+::ng-deep p-calendar .p-ripple{
+    font-size: 13px;
+    height: 28px;
+    width: 28px;
+}
+
+::ng-deep p-calendar .p-ripple:hover{
+    color: var(--primary);
+    background-color: var(--light-gray);
+    border-radius: 50%;
+    font-weight: 700;
+}
+
+::ng-deep p-calendar .p-datepicker-calendar thead {
+    font-weight: 300;
+    color: var(--primary);
+}
+
+::ng-deep p-calendar .p-ripple.p-highlight {
+    background-color: var(--light-primary);
+    color: var(--primary); 
+    border-radius: 50%; 
+}
+
+::ng-deep p-calendar .p-datepicker-calendar .p-datepicker-other-month .p-ripple{
+    color: var(--primary);
+    background-color: var(--light-gray);
+    border-radius: 50%;
+    font-weight: 700;
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+} 
+
+::ng-deep .p-yearpicker {
+    width: 125px;  
+    height: 125px; 
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); 
+    align-items: center;
+    justify-items: center; 
+    border: 2px solid #ccc; 
+    border-radius: 8px; 
+}
+
+::ng-deep .p-yearpicker-year {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    background-color: none;
+}
+
+::ng-deep .p-datepicker-title{
+    display: none; /*Elimina las décadas*/
+}
+
+::ng-deep .p-yearpicker {
+    transform-origin: center bottom;
+    top: -153px;
+    left: -10px;
+    z-index: 1002;
+    background-color: var(--white);
+    width: 100%;  
+    height: auto; 
+}
+
+::ng-deep .p-yearpicker .p-ripple {
+    background-color: none !important; 
+}
+
+::ng-deep .p-yearpicker .p-element {
+    background-color: none !important; 
+}
+
+
+

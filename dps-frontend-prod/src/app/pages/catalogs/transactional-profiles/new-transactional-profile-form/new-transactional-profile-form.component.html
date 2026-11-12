@@ -1,0 +1,134 @@
+<section-title
+    [title]="sectionTitle"
+    textBtn="Regresar"
+    [linkText]="linkText"
+    [canCreate]="true"
+    [icon]="'UNDO'">
+</section-title>
+<card-container class="grid w-full">
+    <div class="mb-6 flex items-center justify-between">
+        <text-title text="Información de Perfil Transaccional" size="xsmall" variant="secondary">
+        </text-title>
+        <div>
+            
+        </div>
+    </div>
+    <form (submit)="$event.preventDefault()" action="" class="grid md:grid-cols-6 gap-x-24" [formGroup]="formGroup">
+
+        <div class="col-span-6">
+            <app-input-text
+                id="name"
+                label="Nombre:"
+                [maxlength]="50"
+                [formControlName]="'name'"
+            >
+            </app-input-text>
+        </div>
+
+
+        <div class="col-span-6 py-3">
+            <div class="col-span-6 py-3">
+                <h2 class="font-bold text-xl">
+                    Aplicación*:
+                </h2>
+            </div>
+            <div class="grid  md:grid-cols-8 gap-x-24">
+                <div class="col-span-2 py-3" *ngFor="let item of aplications; let i = index">
+                    <label class="">
+                        <input type="radio" 
+                            formControlName="aplicationRadios" 
+                            [id]="item.hex_value" 
+                            [value]="item.hex_value"
+                            #radioRef 
+                            (change)="checkHexa( radioRef.checked, 2, item.hex_value )"
+                            class="px-4"
+                            > 
+                            <span class="px-2 text-primary">
+                                {{ item.name }} 
+                            </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="py-3"></div>
+
+        <div class="col-span-6 py-3">
+            <div class="col-span-6 py-3">
+                <h2 class="font-bold text-xl">
+                    Transacciones*:
+                </h2>
+            </div>
+            <div class="grid  md:grid-cols-9 gap-x-24">
+                <ng-container *ngFor="let item of transactions; let i = index">
+                    <div class="col-span-3 py-3"  formArrayName="transactionsChecks">
+                    
+                        <label class="">
+                            <input type="checkbox" 
+                                [formControlName]="i" 
+                                [id]="item.hex_value" 
+                                [value]="item.hex_value"
+                                [checked]="isChecked(item.hex_value)"
+                                #checkboxRef
+                                (change)="checkHexa( checkboxRef.checked, 1, item.hex_value )"
+                                class="px-4 text-primary"
+                                > 
+                                <span class="px-2 text-primary">
+                                    {{ item.name }} 
+                                </span>
+                        </label>
+                    </div>
+                </ng-container>
+                
+            </div>
+        </div>
+
+        <div class="col-span-6 py-3">
+            <div class="col-span-6 py-3">
+                <h2 class="font-bold text-xl">
+                    Indicadores*:
+                </h2>
+            </div>
+            <div class="grid  md:grid-cols-9 gap-x-24" formArrayName="indicatorsChecks">
+                <div class="col-span-3 py-3" *ngFor="let item of indicators; let i = index">
+                    <label class="">
+                        <input type="checkbox" 
+                            [formControlName]="i"
+                            [id]="item.hex_value" 
+                            [value]="item.hex_value"
+                            [checked]="isCheckedIndicator(item.hex_value)"
+                            #checkboxRef
+                            (change)="checkHexa( checkboxRef.checked, 3, item.hex_value )"
+                            class="px-4"
+                            > 
+                            <span class="px-2 text-primary">
+                                {{ item.name }}
+                            </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+    
+        <div class="col-span-6 hidden">
+            <app-input-text
+                id="hexValue"
+                label="hexValue:*"
+                [formControlName]="'hexValue'"
+            >
+            </app-input-text>
+        </div>
+        
+        <div class="col-span-6 flex justify-end">
+            <action-button
+                (click)="saveForm()"
+                class="mt-6"
+                text="Guardar"
+                [linkIcon]="'SAVE'">
+            </action-button>
+        </div>
+
+
+
+    </form>
+</card-container>

@@ -1,0 +1,25 @@
+<nav class="flex items-center justify-between h-28 select-none">
+    <header-logo></header-logo>
+    <div
+        *ngIf="userInfo && isUserInfoVisible" 
+        class="flex-1 flex items-center justify-between mx-8 lg:ml-1">
+        <span>
+            <header-greeting
+                name={{userFullName}}>
+            </header-greeting>
+        </span>
+        <user-profile-badge
+            (accountDetail)="getDetail()"
+            name={{userFullName}}
+            userName={{userName}}
+            [role]="userRole"
+            [isAdmin]="isUserAdmin"
+            [resourceCount]="userResourceCount"
+            >
+        </user-profile-badge>
+    </div>
+</nav>
+<div 
+    *ngIf="userInfo && isUserInfoVisible" 
+    class="h-1 bg-gradient-to-r from-primary to-blue">
+</div>

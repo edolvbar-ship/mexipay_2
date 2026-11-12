@@ -1,0 +1,37 @@
+<div class="relative">
+    <label [ngClass]="{'text-primary font-bold': variant == 'secondary'}"  class="block text-[14px] capitalize flex items-baseline">
+        <span class="truncate">{{ label }}</span><sup *ngIf="required"><i class="pi pi-asterisk text-red text-[0.5rem]" ></i></sup>
+    </label>
+    <div class="relative">
+        <select
+        #input
+        [(ngModel)]="value"
+        [ngClass]="{
+            'text-red border-red': isInvalid(),
+            'placeholder:text-gray': !isInvalid()
+        }"
+        class="block rounded-t-lg p-2 w-full b-[1px] font-normal text-[15px] text-black border-0 border-b border-light-gray appearance-none focus:outline-none focus:ring-0 focus:border-primary m-0  focus:black"
+        [required]="required" 
+        [disabled]="disabled"
+        (blur)="onBlur($event)"
+        (focus)="onFocus($event)"
+        (change)="onInput($event)"
+        >
+        <ng-content>
+            <option disabled selected value=""><span class="capitalize">Selecciona Una Opción</span></option>
+        </ng-content>
+        <option *ngFor="let option of options | keyvalue" [value]="option.value">
+            {{option.key}}
+        </option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pt-2 w-3" [ngClass]="{'text-gray':disabled}">
+            <i class="pi pi-angle-down" ></i>
+        </div>
+    </div>
+    <div (click)="input.focus()" class="absolute bottom-2 bg-white left-1 text-red flex items-center" [ngClass]="{'invisible': !isInvalid()}" >
+        <i class="pi pi-exclamation-circle text-lg pr-2" ></i>
+        <span class="truncate">
+            {{getError(control)}}
+        </span>
+    </div>
+</div>

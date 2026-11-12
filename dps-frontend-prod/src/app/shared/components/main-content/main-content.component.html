@@ -1,0 +1,6 @@
+<div class="container mx-auto">
+<ng-container>
+    <app-spinner *ngIf="isLoading"></app-spinner>
+    <router-outlet (activate)="isLoading = false" (deactivate)="isLoading = true"></router-outlet>
+</ng-container>
+</div>

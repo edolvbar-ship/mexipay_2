@@ -1,0 +1,704 @@
+<div class="enhanced-transactions-container">
+  <!-- Header Section with Merchant Info -->
+  <div class="transactions-header">
+    <section-title title="Transacciones Mejoradas"></section-title>
+
+    <!-- Merchant Information Display -->
+    <div class="merchant-display">
+      <div class="merchant-info-banner">
+        <div class="merchant-icon">
+          <i class="pi pi-building"></i>
+        </div>
+        <div class="merchant-details">
+          <div class="merchant-label">{{ isAdmin ? 'Comercios Disponibles' : 'Mi Comercio' }}</div>
+          <div class="merchant-name-display">
+            {{ getCurrentMerchantName() }}
+          </div>
+        </div>
+        <div class="merchant-status">
+          <span class="status-badge {{ isAdmin ? 'admin' : 'user' }}">
+            {{ isAdmin ? 'Administrador' : 'Usuario' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button
+        type="button"
+        class="btn btn-outline-primary"
+        (click)="showFilters = !showFilters">
+        <i class="pi pi-filter"></i> Filtros
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-outline-primary"
+        [disabled]="!canExportCSV() && !canExportExcel()"
+        (click)="showExportDialog = true"
+        [pTooltip]="getExportTooltip()"
+        tooltipPosition="top">
+        <i class="pi pi-download"></i> Exportar
+      </button>
+      <button
+        type="button"
+        class="btn btn-outline-danger"
+        (click)="exportToPDF()"
+        [disabled]="!hasActiveFilters() || !canExportPDF()"
+        [pTooltip]="getPDFExportTooltip()">
+        <i class="pi pi-file-pdf"></i> PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Panel -->
+  <div class="filters-panel" [class.collapsed]="!showFilters">
+    <div class="filters-content">
+      <form [formGroup]="filterForm" class="filter-form">
+        <!-- Date Range Inputs -->
+        <div class="filter-section">
+          <label class="filter-label">Rango de fechas:</label>
+          <div class="date-inputs">
+            <input
+              type="date"
+              formControlName="startDate"
+              class="form-control"
+              placeholder="Desde">
+            <input
+              type="date"
+              formControlName="endDate"
+              class="form-control"
+              placeholder="Hasta">
+            <button
+              type="button"
+              class="apply-btn"
+              (click)="loadTransactions()">
+              Aplicar
+            </button>
+          </div>
+          <small class="text-muted">Seleccione fechas y haga clic en Aplicar o use los rangos rápidos abajo</small>
+        </div>
+
+        <!-- Quick Date Presets -->
+        <div class="filter-section">
+          <label class="filter-label">Rango rápido:</label>
+          <div class="quick-presets">
+            <button
+              *ngFor="let preset of quickDatePresets"
+              type="button"
+              class="preset-btn"
+              (click)="onQuickDateSelect(preset)">
+              {{ preset.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Term -->
+        <div class="filter-section">
+          <label class="filter-label">Buscar:</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="pi pi-search"></i>
+            </span>
+            <input
+              type="text"
+              formControlName="searchTerm"
+              class="form-control filter-input"
+              placeholder="Referencia, Autorización, Terminal...">
+          </div>
+        </div>
+
+        <!-- Merchant Filter (All Users) -->
+        <div class="filter-section">
+          <label class="filter-label">Comercios:</label>
+          <div class="merchant-filter">
+            <p-multiSelect 
+              formControlName="merchants"
+              [options]="merchantOptions"
+              [showToggleAll]="true"
+              [style]="{'width':'100%', 'background-color': 'whitesmoke', 'z-index': '1004'}"
+              placeholder="Seleccione comercios"
+              optionLabel="label"
+              optionValue="value"
+              [panelStyle]="{'background-color': 'whitesmoke', 'z-index': '1004', 'min-width': '261px', 'box-shadow': '0 10px 25px rgba(0, 0, 0, 0.15)', 'border': '1px solid #d1d5db', 'border-radius': '8px', 'margin-top': '-2px'}"
+              scrollHeight="200px"
+              class="merchant-dropdown">
+            </p-multiSelect>
+          </div>
+        </div>
+
+        <!-- Filter Actions (Admin Only) -->
+        <div class="filter-actions" *ngIf="isAdmin">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="clearFilters()">
+            <i class="pi pi-refresh"></i> Limpiar filtros
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- THE 5 LITTLE CARDS FIRST -->
+  <div class="stats-container" *ngIf="!loading">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="pi pi-list"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ getFilteredCount() | number }}</div>
+        <div class="stat-label">Transacciones</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon approved">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ getApprovalRate() }}%</div>
+        <div class="stat-label">Tasa de aprobación</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="pi pi-dollar"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ formatAmount(getTotalAmount()) }}</div>
+        <div class="stat-label">Monto total</div>
+      </div>
+    </div>
+
+    <!-- FORECAST CARDS - PROMINENTLY DISPLAYED -->
+    <div class="stat-card forecast-highlight">
+      <div class="stat-icon forecast">
+        <i class="pi pi-trending-up"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value forecast-value">{{ formatAmount(forecastedSalesToday) }}</div>
+        <div class="stat-label forecast-label">VENTAS PRONOSTICADAS HOY</div>
+      </div>
+    </div>
+
+    <div class="stat-card forecast-highlight">
+      <div class="stat-icon forecast">
+        <i class="pi pi-chart-line"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value forecast-value">{{ forecastedApprovalRate }}%</div>
+        <div class="stat-label forecast-label">TASA DE APROBACIÓN PRONOSTICADA</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THEN THE TABLE -->
+  <div class="table-container" *ngIf="!loading">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Merchant Name</th>
+            <th>Terminal</th>
+            <th>Message Type</th>
+            <th>Reference Number</th>
+            <th>Amount</th>
+            <th>Response Code</th>
+            <th>Authorization</th>
+            <th>BIN</th>
+            <th>Last 4</th>
+            <th>Creation Date</th>
+            <th>Operation ID</th>
+            <th>Status</th>
+            <th>Card Type</th>
+            <th>Transaction Date</th>
+            <th>Transaction Time</th>
+            <th>Capture Date</th>
+            <th>Card Acceptor</th>
+            <th>Folio</th>
+            <th>Trace Number</th>
+            <th>Entry Mode</th>
+            <th>Reverse Code</th>
+            <th>Draft Capture</th>
+            <th>Billing City</th>
+            <th>Billing Country</th>
+            <th>Billing Postal</th>
+            <th>Billing State</th>
+            <th>Billing Street</th>
+            <th>Cust Email</th>
+            <th>Cust Name</th>
+            <th>Expiration</th>
+            <th>Order ID</th>
+            <th>Response Msg</th>
+            <th>Selia Txn ID</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let transaction of filteredTransactions">
+            <td class="transaction-id">{{ transaction.id_message }}</td>
+            <td class="merchant-name">{{ transaction.name_merchant || getDefaultValue('Comercio no disponible') }}</td>
+            <td class="terminal">{{ transaction.terminal || getDefaultValue('Terminal no disponible') }}</td>
+            <td class="msg-type">{{ transaction.msg_type || getDefaultValue('Tipo de mensaje no disponible') }}</td>
+            <td class="reference-number">{{ transaction.reference_number || getDefaultValue('Referencia no disponible') }}</td>
+            <td class="amount">{{ formatAmount(transaction.amount) }}</td>
+            <td class="resp-code">
+              <span
+                class="status-badge"
+                [class]="getTransactionStatusClass(transaction.resp_code)"
+                pTooltip="Código: {{ transaction.resp_code }} - {{ getTransactionStatusLabel(transaction.resp_code) }}"
+                tooltipPosition="top">
+                {{ getTransactionStatusLabel(transaction.resp_code) }}
+              </span>
+            </td>
+            <td class="authorization">{{ transaction.authorization || getDefaultValue('Autorización no disponible') }}</td>
+            <td class="bin">{{ transaction.bin || getDefaultValue('BIN no disponible') }}</td>
+            <td class="last4">{{ transaction.last4 || getDefaultValue('Últimos 4 dígitos no disponibles') }}</td>
+            <td class="creation-date">{{ formatDateForDisplay(transaction.creation_date) }}</td>
+            <td class="operation-id">{{ getOperationLabel(transaction.id_operation) }}</td>
+            <td class="status">{{ getStatusLabel(transaction.estatus_f) }}</td>
+            <td class="card-type">{{ getCardTypeName(transaction.card_type) }}</td>
+            <td class="tran-date">{{ formatDateForDisplay(transaction.tran_date) }}</td>
+            <td class="tran-time">{{ formatTimeOnly(transaction.tran_time) }}</td>
+            <td class="capture-date">{{ formatDateForDisplay(transaction.capture_date) }}</td>
+            <td class="card-acceptor">{{ transaction.card_acceptor || getDefaultValue('Aceptador de tarjeta no disponible') }}</td>
+            <td class="folio">{{ transaction.folio || getDefaultValue('Folio no disponible') }}</td>
+            <td class="trace-number">{{ transaction.trace_number || getDefaultValue('Número de trazo no disponible') }}</td>
+            <td class="entry-mode">{{ transaction.entry_mode || getDefaultValue('Modo de entrada no disponible') }}</td>
+            <td class="reverse-code">{{ transaction.reverse_code || getDefaultValue('Código de reverso no disponible') }}</td>
+            <td class="draft-capture">{{ transaction.draft_capture || getDefaultValue('Captura de borrador no disponible') }}</td>
+            <td class="billing-city">{{ getJsonValueField(transaction, 'billing_address_city') }}</td>
+            <td class="billing-country">{{ getJsonValueField(transaction, 'billing_address_country') }}</td>
+            <td class="billing-postal">{{ getJsonValueField(transaction, 'billing_address_postal_code') }}</td>
+            <td class="billing-state">{{ getJsonValueField(transaction, 'billing_address_state') }}</td>
+            <td class="billing-street">{{ getJsonValueField(transaction, 'billing_address_street') }}</td>
+            <td class="cust-email">{{ getJsonValueField(transaction, 'customer_email') }}</td>
+            <td class="cust-name">{{ getJsonValueField(transaction, 'customer_name') }}</td>
+            <td class="expiration">{{ getJsonValueField(transaction, 'expiration_selia_format') }}</td>
+            <td class="order-id">{{ getJsonValueField(transaction, 'order_id') }}</td>
+            <td class="response-msg">{{ getJsonValueField(transaction, 'response_message') }}</td>
+            <td class="selia-txn-id">{{ getJsonValueField(transaction, 'selia_transaction_id') }}</td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  *ngIf="isAdmin"
+                  type="button"
+                  class="btn btn-sm btn-info"
+                  title="Ver detalles completos"
+                  pTooltip="Ver todos los detalles de la transacción"
+                  tooltipPosition="top"
+                  (click)="openTransactionDetails(transaction)">
+                  <i class="pi pi-eye"></i>
+                  <span class="btn-text">Detalles</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-success"
+                  title="Descargar comprobante TXT"
+                  pTooltip="Descargar comprobante en formato TXT"
+                  tooltipPosition="top"
+                  (click)="downloadTransactionTxt(transaction)">
+                  <i class="pi pi-download"></i>
+                  <span class="btn-text">TXT</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-warning"
+                  title="Copiar referencia"
+                  pTooltip="Copiar número de referencia al portapapeles"
+                  tooltipPosition="top"
+                  (click)="copyToClipboard(transaction.reference_number)">
+                  <i class="pi pi-copy"></i>
+                  <span class="btn-text">Copiar</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container">
+      <div class="rows-per-page">
+        <label>Mostrar:</label>
+        <select class="form-select form-select-sm" [value]="rows" (change)="onRowsPerPageChange($event)">
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+        <span>por página</span>
+      </div>
+      <p-paginator
+        [first]="first"
+        [rows]="rows"
+        [totalRecords]="totalRecords"
+        [rowsPerPageOptions]="[10, 25, 50, 100]"
+        (onPageChange)="onPageChange($event)"
+        styleClass="p-paginator-sm">
+      </p-paginator>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-message" *ngIf="filteredTransactions.length === 0">
+      <i class="pi pi-inbox empty-icon"></i>
+      <p>No se encontraron transacciones</p>
+      <p>Intenta ajustar los filtros para ver resultados</p>
+    </div>
+  </div>
+
+  <!-- THENNNNN THE ANALISIS COMPLETO Y PRONOSTICOS -->
+  <div class="analytics-dashboard-container">
+    <!-- Professional Analytics Header -->
+    <div class="analytics-header">
+      <div class="header-left">
+        <h2 class="analytics-title">ANÁLISIS COMPLETO Y PRONÓSTICOS</h2>
+        <p class="analytics-subtitle">Análisis avanzado de rendimiento transaccional</p>
+      </div>
+
+      <!-- Live Metrics Summary -->
+      <div class="header-metrics">
+        <div class="metric-summary-card">
+          <div class="metric-icon">
+            <i class="pi pi-chart-bar"></i>
+          </div>
+          <div class="metric-info">
+            <span class="metric-value">{{ filteredTransactions.length }}</span>
+            <span class="metric-label">Transacciones</span>
+          </div>
+        </div>
+
+        <div class="metric-summary-card forecast">
+          <div class="metric-icon">
+            <i class="pi pi-trending-up"></i>
+          </div>
+          <div class="metric-info">
+            <span class="metric-value">{{ forecastedSalesToday > 0 ? 'ACTIVO' : 'PENDIENTE' }}</span>
+            <span class="metric-label">Pronóstico</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Analytics Grid Layout -->
+    <div class="analytics-grid">
+      <!-- Forecast Section - PRIORITY -->
+      <div class="analytics-section forecast-section">
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title-group">
+              <div class="section-icon forecast">
+                <i class="pi pi-brain"></i>
+              </div>
+              <div class="section-info">
+                <h3 class="section-title">PRONÓSTICOS INTELIGENTES</h3>
+                <p class="section-description">Análisis predictivo basado en IA</p>
+              </div>
+            </div>
+            <div class="section-badge ai-badge">
+              <i class="pi pi-sparkles"></i>
+              IA
+            </div>
+          </div>
+
+          <div class="forecast-content">
+            <div class="forecast-main-chart" *ngIf="hasSalesForecastData">
+              <div class="chart-card premium">
+                <div class="chart-header">
+                  <h4 class="chart-title">📈 Pronóstico de Ventas Diarias</h4>
+                  <div class="chart-meta">
+                    <span class="meta-badge">
+                      <i class="pi pi-clock"></i>
+                      Histórico + Futuro
+                    </span>
+                  </div>
+                </div>
+                <div class="chart-container">
+                  <p-chart type="line" [data]="salesForecastData" [options]="forecastChartOptions"></p-chart>
+                </div>
+                <div class="chart-insight">
+                  <strong>Pronóstico Hoy:</strong> {{ formatAmount(forecastedSalesToday) }}
+                </div>
+              </div>
+            </div>
+
+            <div class="forecast-side-panel" *ngIf="hasApprovalForecastData">
+              <div class="chart-card secondary">
+                <div class="chart-header">
+                  <h4 class="chart-title">📊 Pronóstico de Tasa de Aprobación</h4>
+                  <div class="chart-meta">
+                    <span class="meta-badge">
+                      <i class="pi pi-trending-up"></i>
+                      Series Temporales
+                    </span>
+                  </div>
+                </div>
+                <div class="chart-container">
+                  <p-chart type="line" [data]="approvalForecastData" [options]="forecastChartOptions"></p-chart>
+                </div>
+                <div class="chart-insight">
+                  <span class="rate-value">{{ forecastedApprovalRate }}% Hoy</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Section - OPERATIONAL METRICS -->
+      <div class="analytics-section operational-section">
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-title-group">
+              <div class="section-icon operational">
+                <i class="pi pi-chart-line"></i>
+              </div>
+              <div class="section-info">
+                <h3 class="section-title">ANÁLISIS OPERATIVO</h3>
+                <p class="section-description">Métricas en tiempo real</p>
+              </div>
+            </div>
+            <div class="section-badge live-badge">
+              <i class="pi pi-circle-fill"></i>
+              EN VIVO
+            </div>
+          </div>
+
+          <div class="operational-charts">
+            <div class="chart-card standard" *ngIf="hasStatusChartData">
+              <div class="chart-header">
+                <h4 class="chart-title">Distribución por Estado</h4>
+              </div>
+              <div class="chart-container">
+                <p-chart type="pie" [data]="statusChartData" [options]="pieChartOptions"></p-chart>
+              </div>
+            </div>
+
+            <div class="chart-card standard" *ngIf="hasTrendsChartData">
+              <div class="chart-header">
+                <h4 class="chart-title">Tendencias Semanales</h4>
+              </div>
+              <div class="chart-container">
+                <p-chart type="line" [data]="trendsChartData" [options]="lineChartOptions"></p-chart>
+              </div>
+            </div>
+
+            <div class="chart-card standard" *ngIf="hasAmountChartData">
+              <div class="chart-header">
+                <h4 class="chart-title">Monto por Estado</h4>
+              </div>
+              <div class="chart-container">
+                <p-chart type="bar" [data]="amountChartData" [options]="barChartOptions"></p-chart>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insights & Intelligence Panel -->
+      <div class="analytics-section insights-section">
+        <div class="section-card insights-card">
+          <div class="section-header">
+            <div class="section-title-group">
+              <div class="section-icon insights">
+                <i class="pi pi-lightbulb"></i>
+              </div>
+              <div class="section-info">
+                <h3 class="section-title">INSIGHTS INTELIGENTES</h3>
+                <p class="section-description">Recomendaciones automáticas</p>
+              </div>
+            </div>
+            <div class="section-badge smart-badge">
+              <i class="pi pi-cog"></i>
+              SMART
+            </div>
+          </div>
+
+          <div class="insights-content">
+            <div class="insight-item priority" *ngIf="forecastedSalesToday > 0">
+              <div class="insight-icon forecast">
+                <i class="pi pi-chart-line"></i>
+              </div>
+              <div class="insight-details">
+                <h5 class="insight-title">Tendencia de Ventas</h5>
+                <p class="insight-description">
+                  Se espera <strong>{{ formatAmount(forecastedSalesToday) }}</strong> en ventas para hoy
+                </p>
+              </div>
+            </div>
+
+            <div class="insight-item analysis" *ngIf="forecastedApprovalRate > 0">
+              <div class="insight-icon approval">
+                <i class="pi pi-check-circle"></i>
+              </div>
+              <div class="insight-details">
+                <h5 class="insight-title">Tasa de Aprobación</h5>
+                <p class="insight-description">
+                  Pronóstico de <strong>{{ forecastedApprovalRate }}%</strong> para los próximos días
+                </p>
+              </div>
+            </div>
+
+            <div class="insight-item system">
+              <div class="insight-icon system">
+                <i class="pi pi-clock"></i>
+              </div>
+              <div class="insight-details">
+                <h5 class="insight-title">Estado del Sistema</h5>
+                <p class="insight-description">
+                  Análisis en tiempo real • Datos actualizados
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions Panel -->
+      <div class="analytics-section actions-section">
+        <div class="section-card actions-card">
+          <div class="section-header">
+            <h3 class="section-title">ACCIONES RÁPIDAS</h3>
+          </div>
+
+          <div class="actions-content">
+            <button class="action-btn primary" (click)="exportToPDF()">
+              <div class="action-icon">
+                <i class="pi pi-file-pdf"></i>
+              </div>
+              <div class="action-info">
+                <span class="action-title">Exportar PDF</span>
+                <span class="action-description">Informe completo</span>
+              </div>
+            </button>
+
+            <button class="action-btn secondary" (click)="showExportDialog = true">
+              <div class="action-icon">
+                <i class="pi pi-download"></i>
+              </div>
+              <div class="action-info">
+                <span class="action-title">Exportar Datos</span>
+                <span class="action-description">CSV/Excel</span>
+              </div>
+            </button>
+
+            <button class="action-btn info" (click)="debugTransactionTotals()">
+              <div class="action-icon">
+                <i class="pi pi-search"></i>
+              </div>
+              <div class="action-info">
+                <span class="action-title">Análisis Detallado</span>
+                <span class="action-description">Debug info</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <div class="text-center p-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-2">Cargando transacciones...</p>
+    </div>
+  </div>
+
+<p-dialog
+  header="Detalles de la transacción"
+  [(visible)]="showDetailsDialog"
+  [modal]="true"
+  [style]="{ width: '70vw', maxWidth: '900px' }"
+  [dismissableMask]="true"
+  (onHide)="closeTransactionDetails()"
+  baseZIndex="10000"
+  [blockScroll]="true">
+
+  <div *ngIf="!detailsLoading && selectedTransactionDetails" class="json-viewer">
+    <div class="json-header">
+      <h6 class="mb-3">Detalles completos de la transacción:</h6>
+      <button class="btn btn-sm btn-outline-primary" (click)="copyFullTransactionToClipboard()">
+        <i class="pi pi-copy"></i> Copiar JSON
+      </button>
+    </div>
+    <pre class="json-content">{{ getFormattedTransactionJson() }}</pre>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="closeTransactionDetails()">
+      Cerrar
+    </button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  header="Exportar Transacciones"
+  [(visible)]="showExportDialog"
+  [modal]="true"
+  [style]="{ width: '50vw', maxWidth: '600px', zIndex: 9999 }"
+  [dismissableMask]="true"
+  (onHide)="showExportDialog = false"
+  baseZIndex="9999"
+  [blockScroll]="true"
+  [draggable]="false"
+  [resizable]="false">
+
+  <div class="export-dialog-content">
+    <form [formGroup]="exportForm" class="export-form">
+      <div class="mb-3">
+        <label for="format" class="form-label">Formato de exportación:</label>
+        <select id="format" formControlName="format" class="form-select">
+          <option value="csv" [disabled]="!canExportCSV()">CSV</option>
+          <option value="excel" [disabled]="!canExportExcel()">Excel</option>
+        </select>
+        <small class="text-muted" *ngIf="!canExportCSV() && !canExportExcel()">
+          <i class="pi pi-info-circle"></i> No tiene permisos para exportar a CSV o Excel
+        </small>
+      </div>
+
+      <div class="mb-3">
+        <div class="form-check">
+          <input type="checkbox" id="includeDetails" formControlName="includeDetails" class="form-check-input">
+          <label for="includeDetails" class="form-check-label">
+            Incluir detalles adicionales
+          </label>
+        </div>
+      </div>
+
+      <div class="export-info">
+        <div class="alert alert-info">
+          <i class="pi pi-info-circle"></i>
+          <strong>Información de exportación:</strong>
+          <ul class="mb-0 mt-2">
+            <li>Se exportarán <strong>{{ getFilteredCount() }}</strong> transacciones</li>
+            <li *ngIf="hasActiveFilters()">
+              Se aplicarán los filtros activos
+            </li>
+            <li *ngIf="!hasActiveFilters()">
+              Se exportarán todas las transacciones visibles
+            </li>
+          </ul>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button type="button" class="btn btn-outline-secondary" (click)="showExportDialog = false">
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="exportTransactions()">
+      <i class="pi pi-download"></i> Exportar
+    </button>
+  </ng-template>
+</p-dialog>

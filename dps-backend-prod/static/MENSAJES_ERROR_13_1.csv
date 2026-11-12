@@ -1,0 +1,315 @@
+CAMPO13/Origen,CODIGO/CAMPO14,DESCRIPCION,Mensaje Terminal,Type
+1,0,OK,Transaccin aprobada,Correct
+1,1,INVALID MESSAGE HEADER,Error interno del sistema,Programatic error
+1,2,INCONSISTENT LENGTH BETWEEN VALUE IN HEADER/MESSAGE,Error interno del sistema,Programatic error
+1,3,MESSAGE'S LENGTH GREATER THAN 1018,Error interno del sistema,Programatic error
+1,4,No. BYTES RECEIVED LESS THAN MESSAGE'S LENGTH,Error interno del sistema,Programatic error
+1,5,INVALID DELIMITERS OF MESSAGE,Error interno del sistema,Programatic error
+1,6,MANDATORY FIELD NOT FOUND,Error interno del sistema,Programatic error
+1,7,ORIGINATOR/NODE NO AUTORIZADO,Punto de venta no autorizado,Gateway restriction
+1,8,NO PENDING TRANSACTION,No hay transaccin pendiente,Commerce info
+1,9,INVALID TRANSACTION TYPE,Tipo de transaccin no vlido,Emisor restriction
+1,10,INVALID TrxAction VALUE,Accin de transaccin no vlida,Programatic error
+1,11,TRANSACTION PENDING,Transaccin pendiente,Commerce retry
+1,12,NO PENDING TRANSACTION FOR THIS TRXTYPE-TRXID,No hay transaccin pendiente para este tipo e ID,Commerce info
+1,13,SUSPENDED SERVICE. DATABASE 'SELIA' OFFLINE,Servicio temporalmente no disponible,System error
+1,14,CODIGO PRODUCTO NEGATIVO,Cdigo de producto no vlido,Data error
+1,15,NO ENTRY FOR HOST IN TABLE selia_dbmshosts,Error de configuracin del sistema,System error
+1,16,UNABLE TO CONNECT TO DBMS-HOST,Error de conexin a base de datos,System error
+1,17,TrxIds AND TrxActions HAS DIFFERENT SIZES,Error interno del sistema,Programatic error
+1,18,CANTIDAD CON SIGNO NO ACEPTABLE,Cantidad no vlida,Data error
+1,19,TrxId NOT FOUND,Transaccin no encontrada,Commerce info
+1,20,DbmsHost NO EN CACHE,Error interno del sistema,System error
+1,21,NO ENTRY FOR COHOST IN TABLE selia_cohosts,Error de configuracin del sistema,System error
+1,22,CONNECTION FAILED TO COHOST,Error de conexin con el banco,System error
+1,23,TIMEOUT CONNECTING COHOST,Timeout de conexin con el banco,System error
+1,24,INVALID TRANSACTION SUBTYPE VALUE,Subtipo de transaccin no vlido,Data error
+1,25,CONNECTION LOST TO COHOST,Conexin perdida con el banco,System error
+1,26,TIMEOUT EXPECTING COHOST RESPONSE,Timeout esperando respuesta del banco,System error
+1,27,ERROR EN NUEVO LOTE (selia_originators),Error interno del sistema,System error
+1,28,ERROR AL REPLACEAR REGISTRO EN selia_lotes,Error interno del sistema,System error
+1,29,ERROR AL DETERMINAR #TRXS EN LOTES,Error interno del sistema,System error
+1,30,CODIGO SEGURIDAD NO DADO,Cdigo de seguridad requerido,Data error
+1,31,CARD SEQUENCE NUMBER NO DADO,Nmero de secuencia de tarjeta requerido,Data error
+1,32,PAGO NO CANCELABLE. YA DEPOSITADO,Pago no cancelable, ya depositado,Business rule
+1,33,VALOR INVALIDO EN FORMA DE PAGO,Forma de pago no vlida,Data error
+1,34,TRANSACCION YA EXISTENTE,Transaccin ya existente,Commerce info
+1,35,TRANSACCION YA DEPOSITADA,Transaccin ya depositada,Business rule
+1,36,Transaccion a cancelar no encontrada,Transaccin a cancelar no encontrada,Commerce info
+1,37,Incongruencia en puntos con transaccion a cancelar,Inconsistencia en puntos con la transaccin,Data error
+1,50,NO PIN DISPONIBLE,PIN no disponible,System error
+1,51,PIN NO DESCIFRADO,Error en procesamiento de PIN,System error
+1,52,PIN NOT FOUND,PIN no encontrado,System error
+1,60,VALE-PRODUCTO NO REGISTRADO,Vale o producto no registrado,Data error
+1,61,VALE NO ACTIVO,Vale no activo,Business rule
+1,62,VALE VENCIDO,Vale vencido,Business rule
+1,63,VALE-PRODUCTO YA COMPLETAMENTE SURTIDO,Vale completamente surtido,Business rule
+1,64,CANTIDAD SOLICITADA MAYOR A DISPONIBLE,Cantidad solicitada mayor a disponible,Business rule
+1,65,UN MISMO PRODUCTO DE DIFERENTES VALES SURTIDO EN UN MISMO TICKET,Producto de diferentes vales en mismo ticket,Business rule
+1,66,"CANTIDAD A DEVOLVER MAYOR A SURTIDA (1,CONSIDERA NO-CONFIRMADOS)",Cantidad a devolver mayor a surtida,Business rule
+1,67,Prods AND Qtys TIENEN DIFERENTES TAMAOS,Error en datos de productos,Data error
+1,68,CANTIDAD A DEVOLVER MAYOR A SURTIDA EN TICKET,Cantidad a devolver mayor a surtida,Business rule
+1,69,TICKET-PRODUCTO NO REGISTRADO COMO SURTIDO,Ticket-producto no surtido,Commerce info
+1,70,Prods AND Pcios TIENEN DIFERENTES TAMAOS,Error en datos de precios,Data error
+1,71,"Pago (1,21) con trxId no encontrado",Pago no encontrado,Commerce info
+1,72,"Confirmacion pago (1,22) con trxId dado no encontrada",Confirmacin de pago no encontrada,Commerce info
+1,73,"Confirmacion pago (1,22) con trxId dado no fue exitosa",Confirmacin de pago no exitosa,Commerce info
+1,74,Valor invalido en campo,Valor de campo no vlido,Data error
+1,75,EMPRESA-COHOST-ORIGINATOR no registrado en  selia_cooriginadores,Configuracin de origen no vlida,System error
+1,76,Invalid value for currency field,Moneda no vlida,Data error
+1,77,NO ENTRY FOR COHOST-TRAMA IN TABLE selia_cotramas,Error de configuracin del sistema,System error
+1,78,Campo recibido no definido en ISOTrama,Campo no definido recibido,Data error
+1,81,Error de Sintaxis en mensaje enviado a Cohost,Error en mensaje al banco,System error
+1,82,Transaccion  no encontrada con trxid dado,Transaccin no encontrada,Commerce info
+1,83,Incongruencia con transaccion registrada,Inconsistencia con transaccin registrada,Data error
+1,84,Error en parsing de ISOMensaje,Error en formato de mensaje,System error
+1,85,Transaccion con status CANCELADA,Transaccin cancelada,Commerce info
+1,86,Error al recuperar msgToCohost en selia_mensajes,Error interno del sistema,System error
+1,87,MsgToCohost nulo en selia_mensajes,Error interno del sistema,System error
+1,88,Cancelacion primera no encontrada,Cancelacin original no encontrada,Commerce info
+1,89,Plan Financiamiento invalido,Plan de financiamiento no vlido,Data error
+1,90,Meses Financiamiento invalido,Meses de financiamiento no vlidos,Data error
+1,91,"Trx abortada, originador cerro socket",Transaccin abortada,System error
+1,92,Caracter invalido/ausente en track2,Error en datos de tarjeta,Data error
+1,93,Transaction original de compra no encontrada,Transaccin original no encontrada,Commerce info
+1,94,Mensaje no pendiente de anular,Mensaje no pendiente de anular,Commerce info
+1,95,Mensaje no encontrado con trxid dado,Mensaje no encontrado,Commerce info
+1,96,Incongruencia en cardinalidad de listas,Error en listas de datos,Data error
+1,97,Servicio suspendido. Intentar mas tarde,Servicio suspendido. Intente ms tarde,System error
+1,98,Firma invalida,Firma invlida,Security error
+1,99,Errores en requerimiento,Errores en la solicitud,Data error
+1,101,AmexTarjeta. Long Invalida,Longitud de tarjeta American Express no vlida,Data error
+1,102,AmexTarjeta. Invalida,Tarjeta American Express no vlida,Data error
+1,103,AmexTarjeta. Caracter invalido,Carcter invlido en tarjeta American Express,Data error
+1,104,AmexTarjeta. Prefijo invalido,Prefijo de tarjeta American Express no vlido,Data error
+1,105,AmexTarjeta. DigVer invalido,Dgito verificador de tarjeta no vlido,Data error
+1,106,RFC no registrado,RFC no registrado,Data error
+1,107,Codigo de Pobl/Muni/Edo erroneo,Cdigo de poblacin/municipio/estado errneo,Data error
+1,108,Error en actualizacion de RFC,Error al actualizar RFC,System error
+1,109,Track2 no disponible,Datos de tarjeta no disponibles,Data error
+1,110,No se encontraron Clientes solicitados,Clientes no encontrados,Commerce info
+1,111,IdxRegistro invalido,ndice de registro no vlido,Data error
+1,112,Referencia invalida,Referencia no vlida,Data error
+1,113,IdxRegistro mayor a tamano Lista,ndice mayor al tamao de lista,Data error
+1,114,Error en actualizacion de Cliente,Error al actualizar cliente,System error
+1,115,En actualizacion de Cliente debe dar Nic o Cliente,Se requiere NIC o cliente para actualizacin,Data error
+1,116,NIC previamente asignado,NIC previamente asignado,Data error
+1,117,No se encontraron Apartados solicitados,Apartados no encontrados,Commerce info
+1,118,Abono mayor a saldo,Abono mayor a saldo,Business rule
+1,119,Status no permite operacion,Estado no permite la operacin,Business rule
+1,120,Producto no registrado,Producto no registrado,Data error
+1,121,Existencia insuficiente,Existencia insuficiente,Business rule
+1,122,Error en actualizacion de Pedido,Error al actualizar pedido,System error
+1,123,Pedido no registrado,Pedido no registrado,Commerce info
+1,124,Pedido inconsistente con Suc-Caja-Ticket,Pedido inconsistente con sucursal-caja-ticket,Data error
+1,125,Inconsistencia en numero de elementos,Inconsistencia en nmero de elementos,Data error
+1,126,Error en actualizacion de ped_productos,Error al actualizar productos de pedido,System error
+1,127,No se encontraron Pedidos solicitados,Pedidos no encontrados,Commerce info
+1,128,Pedido-Producto no registrado,Pedido-producto no registrado,Commerce info
+1,129,Pedido-Producto no pendiente de entregar,Pedido-producto no pendiente de entrega,Business rule
+1,130,Pedido-Producto ya devuelto o Serie no registrada,Pedido-producto ya devuelto o serie no registrada,Business rule
+1,131,Respuesta nula,Respuesta nula del sistema,System error
+1,132,EMPRESA-COHOST no registrado en selia_coempresas,Configuracin de empresa no vlida,System error
+1,133,Licencia caducada,Licencia caducada,System error
+1,134,Inconsistencia en Monto,Inconsistencia en monto,Data error
+1,135,Parametros invalidos en CoHost,Parmetros invlidos en banco,System error
+1,136,Http Error,Error de comunicacin,System error
+1,137,TrxType no habilitado para SeliaWeb,Tipo de transaccin no habilitado,System error
+1,138,User/Passwd ausentes para SeliaWeb,Usuario/contrasea requeridos,Data error
+1,139,User/Passwd invalidos,Usuario/contrasea invlidos,Security error
+1,140,Usuario no registrado,Usuario no registrado,Security error
+1,141,Status de Usuario no Activo,Usuario no activo,Security error
+1,142,TrxType no autorizado para Usuario,Tipo de transaccin no autorizado para usuario,Security error
+1,143,Params/EParams invalidos en CoOriginadores,Parmetros invlidos en origen,System error
+1,144,Tipo de Pago no registrado,Tipo de pago no registrado,Data error
+1,145,En Cooriginadores. MesesFinan no registrado o Usuario/Passwd/ClientId en nulo,Configuracin de financiamiento incompleta,System error
+1,146,FechaHora en request difiere demasiado con Servidor,Hora del sistema desincronizada,Data error
+1,147,Monto devolucion mayor que monto compra,Monto de devolucin mayor que compra,Business rule
+1,148,Inconsistencia en Afiliacion de POS y BD,Inconsistencia en afiliacin de POS,Data error
+1,149,Empresa no registrada,Empresa no registrada,Data error
+1,150,Se exceden SaldoPrepago y/o LimiteCredito,Se excede saldo prepago o lmite de crdito,Business rule
+1,151,Intento de duplicar registro,Intento de duplicar registro,Data error
+1,152,Telefono ya registrado,Telfono ya registrado,Data error
+1,153,No se encontraron registros solicitados,Registros no encontrados,Commerce info
+1,154,Debe dar NvoCid y/o NvoTel,Se requiere nuevo CID y/o telfono,Data error
+1,155,Debe dar NvoCid,Se requiere nuevo CID,Data error
+1,156,Debe dar NvoTel,Se requiere nuevo telfono,Data error
+1,157,Modificacion no procedente. cid y tel nulos,Modificacin no procedente,Data error
+1,158,Error en actualizacion de CID,Error al actualizar CID,System error
+1,159,Referencia no cooresponde a Empresa/Cid,Referencia no corresponde a empresa/CID,Data error
+1,160,Cid/Telefono no registrado,CID/telfono no registrado,Data error
+1,161,Unable to open Serial Port,Error al abrir puerto serial,System error
+1,162,DECLINADA POR PINPAD,Transaccin declinada por el pinpad,Issuer decline
+1,163,Empresa/Proveedor no registrado en selia_empmargenes,Configuracin de mrgenes no vlida,System error
+1,164,Mayorista debe ser el mismo en ambas empresas,Mayorista debe ser el mismo en ambas empresas,Business rule
+1,165,Nip dado invalido,NIP invlido,Data error
+1,166,Saldo insuficiente para traspaso solicitado,Saldo insuficiente para traspaso,Business rule
+1,167,Las empresas deben tener el mismo modoCargos,Las empresas deben tener mismo modo de cargos,Business rule
+1,168,Las empresas deben tener el mismo Margen,Las empresas deben tener mismo margen,Business rule
+1,169,PinMode invalido,Modo PIN no vlido,Data error
+1,170,Chip Data no dada,Datos de chip no proporcionados,Data error
+1,171,Valor invalido en campo RazonReverso,Razn de reverso no vlida,Data error
+1,172,Voucher no encontrado,Voucher no encontrado,Commerce info
+1,173,Timeout esperando respuesta de Pinpad,Timeout esperando pinpad,System error
+1,174,Envio fallido a SeliaWeb,Envo fallido a sistema web,System error
+1,175,Timeout en HttpConnection,Timeout de conexin,System error
+1,176,Pinpad ACK no recibido,Confirmacin de pinpad no recibida,System error
+1,177,Pinpad Reset fallido,Reset de pinpad fallido,System error
+1,178,Pinpad Request  fallido,Solicitud a pinpad fallida,System error
+1,179,Pinpad Request (C31) fallido,Solicitud C31 a pinpad fallida,System error
+1,180,Txn aprobada Offline,Transaccin aprobada offline,Approved offline
+1,181,Declinada Emv,Declinada por chip EMV,Issuer decline
+1,182,Tarjeta Removida,Tarjeta removida,Customer action
+1,183,Retirar Tarjeta,Retirar tarjeta,Customer action
+1,184,Falla Tarjeta Chip,Falla en tarjeta chip,Card error
+1,185,Tarjeta Bloqueada,Tarjeta bloqueada,Issuer decline
+1,186,Falla en Chip Reintente,Falla en chip, reintente,Card error
+1,187,Use Lector Banda,Use lector de banda,Customer action
+1,188,Comando a Pinpad Fallido,Comando a pinpad fallido,System error
+1,189,Tarjeta Vencida,Tarjeta vencida,Card error
+1,190,TIMEOUT EXPECTING COHOST RESPONSE (NotSended),Timeout esperando respuesta del banco,System error
+1,191,Error en parsing entero,Error en formato numrico,Data error
+1,192,Producto con params nulo,Producto con parmetros nulos,System error
+1,193,NO PENDING TRANSACTION FOR THIS TRXTYPE-TRXID-EMP-ORIG-NODE,No hay transaccin pendiente para estos datos,Commerce info
+1,194,Incongruencia en Empresa,Inconsistencia en empresa,Data error
+1,195,Incongruencia en Tarjeta,Inconsistencia en tarjeta,Data error
+1,196,Incongruencia en Financiamiento,Inconsistencia en financiamiento,Data error
+1,197,Incongruencia en AuthCode,Inconsistencia en cdigo de autorizacin,Data error
+1,198,Txn no procede en contexto TlcToIndigo,Transaccin no procede en contexto actual,System error
+1,199,Cardid no encontrado para Telcel para monto dado,CardID no encontrado para monto dado,System error
+1,200,Parametro no registrado,Parmetro no registrado,System error
+1,201,Valor invalido de parametro,Valor de parmetro no vlido,Data error
+1,202,Bin no encontrado,BIN no encontrado,Data error
+1,203,CVV no dado,CVV no proporcionado,Data error
+1,204,Bin de tarjeta no permitido,BIN de tarjeta no permitido,Issuer restriction
+1,205,No se encontraron conceptos,Conceptos no encontrados,Commerce info
+1,206,NvaTarjeta ya existe,Nueva tarjeta ya existe,Data error
+1,207,Tarjeta ya registrada,Tarjeta ya registrada,Data error
+1,208,Tarjeta no registrada,Tarjeta no registrada,Data error
+1,209,Error en actualizacion de Tarjeta,Error al actualizar tarjeta,System error
+1,210,Debe dar Puntos o Monto diferente a cero,Se requiere puntos o monto diferente a cero,Data error
+1,211,Error en actualizacion de Tarjeta/Movims,Error al actualizar tarjeta/movimientos,System error
+1,212,Saldo insuficiente en puntos,Saldo insuficiente en puntos,Business rule
+1,213,Saldo insuficiente en monto,Saldo insuficiente en monto,Business rule
+1,214,Error en ChipData,Error en datos de chip,Card error
+1,215,Empresa Ip no registrado,IP de empresa no registrada,Security error
+1,216,Originador desconectado,Originador desconectado,System error
+1,217,HttpRequest duplicado,Solicitud duplicada,Data error
+1,218,Servidor suspendido,Servidor suspendido,System error
+1,219,Monto no valido,Monto no vlido,Data error
+1,220,Empresa/Trxtype/Trxsubtype no registrado en selia_empsaldos/selia_empsldostrxtypes,Configuracin de saldos no vlida,System error
+1,221,Se excede Fecha Limite,Se excede fecha lmite,Business rule
+1,222,Bandera Peticion Nueva LLave no es 1,Bandera de nueva llave no es 1,System error
+1,223,Token EW no recibido,Token EW no recibido,System error
+1,224,Token ES no recibido,Token ES no recibido,System error
+1,225,Empresa no activa,Empresa no activa,Business rule
+1,226,Empresa-Originador no registrado,Empresa-originador no registrado,System error
+1,227,Token EX no recibido,Token EX no recibido,System error
+1,228,IniciaLlaves.Respuesta a Z11 con nulo o pinResCode <> 0,Error en inicializacin de llaves,System error
+1,229,Consulta de Puntos no es cancelable,Consulta de puntos no cancelable,Business rule
+1,230,Respuesta Inconsistente,Respuesta inconsistente,System error
+1,231,Referencia no cooresponde a Empresa/Tarjeta,Referencia no corresponde a empresa/tarjeta,Data error
+1,232,Campo con Longitud invalida,Campo con longitud invlida,Data error
+1,233,Remesa no registrada,Remesa no registrada,Data error
+1,234,Remesa con status Suspendida,Remesa suspendida,Business rule
+1,235,Remesa con status Cancelada,Remesa cancelada,Business rule
+1,236,Remesa ya PAGADA,Remesa ya pagada,Business rule
+1,237,Remesa con status NoPagable,Remesa no pagable,Business rule
+1,238,AuthCode invalido,Cdigo de autorizacin invlido,Data error
+1,239,Tipo Identificacion no registrado,Tipo de identificacin no registrado,Data error
+1,240,RedEmpresas no registrada,Red de empresas no registrada,System error
+1,241,Empresa no autorizada para pago,Empresa no autorizada para pago,Business rule
+1,242,Producto con status no disponible,Producto no disponible,Business rule
+1,243,Error en actualizacion de PIN,Error al actualizar PIN,System error
+1,244,Referencia/Cuenta no vigente,Referencia/cuenta no vigente,Business rule
+1,245,No se encontro registro en selia_tarutas,No se encontr ruta en configuracin,System error
+1,246,Accion no registrada en TelcelProtocolo,Accin no registrada en protocolo,System error
+1,247,Error en params de selia_trxsubtypes,Error en parmetros de subtipos,System error
+1,248,InicieLlaves. Datos no cifrados,Datos no cifrados en inicializacin,Security error
+1,249,NvoVale ya existe,Nuevo vale ya existe,Data error
+1,250,Vale ya registrado,Vale ya registrado,Data error
+1,251,Vale no registrado,Vale no registrado,Data error
+1,252,Error en actualizacion de Vale,Error al actualizar vale,System error
+1,253,Es necesario proporcionar NIP,Es necesario proporcionar NIP,Data error
+1,254,Paquete no registrado,Paquete no registrado,Data error
+1,255,Favor de reintentar en 30 segundos..,Favor de reintentar en 30 segundos,System error
+1,256,Favor de reintentar mas tarde..,Favor de reintentar ms tarde,System error
+1,257,Codigo de simulador no disponible,Cdigo de simulador no disponible,System error
+1,258,Simulador no configurado,Simulador no configurado,System error
+1,259,No existen simuladores configurados,No existen simuladores configurados,System error
+1,260,No procede tarjeta solo efectivo,No procede tarjeta, solo efectivo,Business rule
+1,261,No existe registro de operador en cooriginadores,No existe registro de operador,System error
+1,262,No esta definido en cohost el ISSUER-Datos,ISSUER-Datos no definido en banco,System error
+1,263,No esta definido en cohost el ISSUER-ALO,ISSUER-ALO no definido en banco,System error
+1,264,Transaccion con cashback no reversible,Transaccin con cashback no reversible,Business rule
+1,265,Tarjeta Bin no autorizado para cashback,BIN de tarjeta no autorizado para cashback,Issuer restriction
+1,266,Maximo Cashback por Txn excedido,Mximo cashback por transaccin excedido,Business rule
+1,267,Cohost no registrado,Cohost no registrado,System error
+1,268,Accion no registrada,Accin no registrada,System error
+1,269,CoHost ya registrado,Cohost ya registrado,Data error
+1,270,Modulo no iniciado,Mdulo no iniciado,System error
+1,271,Cohost con status NoDisponible,Cohost no disponible,System error
+1,272,No se puede dejar sin cohosts,No se puede dejar sin cohosts,System error
+1,273,Empresa/Tipo no registrado en selia_empsaldos,Empresa/tipo no registrado en saldos,System error
+1,274,Dia Cumpleanos (mmdd) ausente.,Da de cumpleaos ausente,Data error
+1,275,Prefijo no valido,Prefijo no vlido,Data error
+1,276,DigitoVerificador invalido,Dgito verificador invlido,Data error
+1,277,Fuera de Horario,Fuera de horario,Business rule
+1,278,Excede(ra) limite en veces diario,Excede lmite en veces diario,Business rule
+1,279,Excede(ria) limite en monto diario,Excede lmite en monto diario,Business rule
+1,280,Excede(ria) limite en veces en periodo,Excede lmite en veces en perodo,Business rule
+1,281,Excede(ria) limite en monto en periodo,Excede lmite en monto en perodo,Business rule
+1,282,Excede(ria) limite en monto por originador,Excede lmite en monto por originador,Business rule
+1,283,IdxBolsa invalido,ndice de bolsa no vlido,Data error
+1,284,Es tarjeta Amx y campo 457 nulo o dice que no,Es tarjeta Amex y campo 457 incorrecto,Data error
+1,285,No es tarjeta Amx y campo 457 dice que si,No es tarjeta Amex y campo 457 incorrecto,Data error
+1,286,Se requiere actualizacion de SeliaPos,Se requiere actualizacin de SeliaPos,System error
+1,287,Region invalida,Regin invlida,Data error
+1,288,Rechazo en Aduana,Rechazo en aduana,Business rule
+1,289,UserKey no encontrado,UserKey no encontrado,Security error
+1,290,Campo 'encriptado' ausente,Campo 'encriptado' ausente,Security error
+1,291,Error al recuperar desde random value,Error al generar valor aleatorio,System error
+1,292,Monto adicional no debe ser mayor que monto,Monto adicional no debe ser mayor que monto,Data error
+1,293,Error en lista de puertos seriales,Error en lista de puertos seriales,System error
+1,294,Timeout,Timeout,System error
+1,295,TrxTipo no registrado en BD,Tipo de transaccin no registrado,System error
+1,296,Mes no valido,Mes no vlido,Data error
+1,297,Ano no valido,Ao no vlido,Data error
+1,298,Monto inferior al anterior,Monto inferior al anterior,Business rule
+1,299,Excede(ria) limite en  retiro por txn,Excede lmite en retiro por transaccin,Business rule
+1,300,Bin no autorizado para cashback,BIN no autorizado para cashback,Issuer restriction
+1,301,Excede tolerancia en dias,Excede tolerancia en das,Business rule
+1,302,Fallo en Desencriptado de passwd en selia_webusers,Fallo en desencriptado de contrasea,Security error
+1,303,Incongruencia entre entryMode y tokenQ2,Inconsistencia entre modo de entrada y token,Data error
+1,304,En CashAdvance monto y montoAdic deben ser iguales,En adelanto de efectivo montos deben ser iguales,Data error
+1,305,Sin adeudo,Sin adeudo,Business rule
+1,306,MontoAdic debe superar Comision+Iva,Monto adicional debe superar comisin+IVA,Data error
+1,307,MontoTotal no debe ser menor que MontoAdic,Monto total no debe ser menor que monto adicional,Data error
+1,308,TID not found,TID no encontrado,System error
+1,309,Unable to open Socket,Error al abrir socket,System error
+1,310,Txn Forzada pendiente de aprobacion,Transaccin forzada pendiente de aprobacin,Business rule
+1,311,Txn Forzada y ya verificada,Transaccin forzada y ya verificada,Business rule
+1,312,Pinpad Busy,Pinpad ocupado,System error
+1,313,Pinpad Reserved,Pinpad reservado,System error
+1,314,PinpadSocket not found,Socket de pinpad no encontrado,System error
+1,321,DECLINADA. FolioTxn Nulo. Intente de nuevo,Declinada. Folio nulo. Intente de nuevo,Issuer decline
+1,322,Debe ser misma tarjeta del CheckIn,Debe ser misma tarjeta del CheckIn,Business rule
+1,323,Debe ser misma empresa del CheckIn,Debe ser misma empresa del CheckIn,Business rule
+1,324,Ingreso no registrado,Ingreso no registrado,Commerce info
+1,325,Ingreso ya con Checkout,Ingreso ya con Checkout,Business rule
+1,326,Monto no puede ser mayor que saldo,Monto no puede ser mayor que saldo,Business rule
+1,327,Debe ser misma reservacion del CheckIn,Debe ser misma reservacin del CheckIn,Business rule
+1,328,Debe ser misma habitacion del CheckIn,Debe ser misma habitacin del CheckIn,Business rule
+1,329,Debe ser misma moneda del CheckIn,Debe ser misma moneda del CheckIn,Business rule
+1,330,Debe ser mismo huesped del CheckIn,Debe ser mismo husped del CheckIn,Business rule
+1,331,Ingreso an sin checkout,Ingreso an sin checkout,Business rule
+1,332,Monto debe ser igual a saldo del CheckIn,Monto debe ser igual a saldo del CheckIn,Business rule
+1,333,Monto debe ser igual al CheckOut o Venta asociada al checkIn,Monto debe ser igual al CheckOut o venta,Business rule
+1,334,Transaccion con status CheckIn,Transaccin con estado CheckIn,Business rule
+1,335,Trxtype debe CheckOut o Venta asociada al checkIn,Tipo debe ser CheckOut o venta,Business rule
+1,336,Txn no cancelable.,Transaccin no cancelable,Business rule
+1,337,Txn no susceptible de devolucion,Transaccin no susceptible de devolucin,Business rule
+1,338,Passwd/Keycrypto invalidos,Contrasea/llave criptogrfica invlidos,Security error
+1,346,Instancia exclusiva para Broxel 3DSecure,Instancia exclusiva para Broxel 3DSecure,System error
+1,347,Instancia no es Broxel 3DSecure,Instancia no es Broxel 3DSecure,System error
+1,348,Instancia Broxel 3DSecure requiere UrlConfirma,Instancia Broxel 3DSecure requiere URL de confirmacin,System error

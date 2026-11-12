@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MexiPay | Infraestructura y procesamiento de pagos</title>
+    <meta name="description" content="MexiPay ofrece infraestructura tecnológica para que empresas, agregadores y comercios puedan aceptar, procesar y administrar pagos de forma segura, eficiente y escalable.">
+    <meta name="theme-color" content="#0C4772">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons (Outline) -->
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <!-- Page Loader -->
+    <div class="page-loader">
+        <div class="loader-content">
+            <img src="assets/ELEMENTOS GRÁFICOS/Icono Mexipay tpv_200x120.png" alt="MexiPay" class="loader-logo">
+            <div class="loader-progress-bar">
+                <div class="loader-progress-fill"></div>
+            </div>
+            <div class="loader-percentage">000</div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container header-container">
+            <a data-link href="/" class="logo">
+                <img src="assets/ELEMENTOS GRÁFICOS/Icono Mexipay tpv_200x120.png" alt="MexiPay" class="logo-image logo-default">
+                <img src="assets/ELEMENTOS GRÁFICOS/mxpy b.png" alt="MexiPay" class="logo-image logo-home-top header-logo">
+            </a>
+            
+            <nav class="desktop-nav">
+                <a data-link href="/comercios/">Comercios</a>
+                <a data-link href="/agregador/">Agregadores</a>
+                <a data-link href="/procesamiento/">Procesamiento</a>
+                <a data-link href="/nosotros/">Nosotros</a>
+            </nav>
+
+            <div class="header-right">
+                <a data-link href="/contacto/" class="btn btn-primary">Contacto</a>
+                <button class="menu-trigger" aria-label="Abrir menú">
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Fullscreen Menu -->
+    <nav class="nav-menu" aria-hidden="true">
+        <div class="nav-menu-header">
+            <a data-link href="/" class="logo logo-white">
+                <img src="assets/ELEMENTOS GRÁFICOS/Icono Mexipay tpv_200x120.png" alt="MexiPay" class="logo-image">
+            </a>
+            <button class="nav-close" aria-label="Cerrar menú">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+        <div class="nav-menu-content">
+            <a data-link href="/" class="nav-link">Inicio</a>
+            <a data-link href="/comercios/" class="nav-link">Comercios</a>
+            <a data-link href="/agregador/" class="nav-link">Agregadores</a>
+            <a data-link href="/procesamiento/" class="nav-link">Procesamiento</a>
+            <a data-link href="/nosotros/" class="nav-link">Nosotros</a>
+            <a data-link href="/contacto/" class="nav-link">Contacto</a>
+        </div>
+    </nav>
+
+    <main id="app-root"></main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-decoration">
+            <!-- Decorative SVG Waves can go here -->
+        </div>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo logo-white mb-sm">
+                        <img src="assets/ELEMENTOS GRÁFICOS/mxpy b.png" alt="MexiPay" class="logo-image">
+                    </div>
+                    <p class="brand-desc">Infraestructura tecnológica para operar pagos.</p>
+                </div>
+                
+                <div class="footer-col">
+                    <h4>SOLUCIONES</h4>
+                    <nav>
+                        <a data-link href="/agregador/">Agregadores</a>
+                        <a data-link href="/procesamiento/">Procesamiento</a>
+                        <a data-link href="/comercios/">Comercios</a>
+                    </nav>
+                </div>
+                
+                <div class="footer-col">
+                    <h4>EMPRESA</h4>
+                    <nav>
+                        <a data-link href="/nosotros/">Nosotros</a>
+                        <a data-link href="/contacto/">Contacto</a>
+                    </nav>
+                </div>
+                
+                <div class="footer-col">
+                    <h4>LEGAL</h4>
+                    <nav>
+                        <a href="assets/legal/AVISO DE PRIVACIDAD 1jul2024-1.pdf" target="_blank" rel="noopener noreferrer">Aviso de privacidad</a>
+                        <a href="assets/legal/TÉRMINOS Y CONDICIONES PLATAFORMA MEXIPAY-1.pdf" target="_blank" rel="noopener noreferrer">Términos y condiciones</a>
+                        <a href="assets/legal/TÉRMINOS Y CONDICIONES MEXIPAY- PAGARE 4.pdf" target="_blank" rel="noopener noreferrer">Términos y condiciones Pagaré</a>
+                    </nav>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; <span id="current-year"></span> MexiPay</p>
+                <p class="footer-regulatory">MexiPay cuenta con autorización de la Comisión Nacional Bancaria y de Valores (CNBV), conforme a la normativa aplicable.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Request Modal -->
+    <div class="request-modal" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="modal-backdrop"></div>
+        <div class="modal-panel">
+            <button class="modal-close" aria-label="Cerrar modal">
+                <i class="ph ph-x"></i>
+            </button>
+            <div class="modal-content">
+                <div class="eyebrow"><span class="eyebrow-dot"></span>CONTACTO</div>
+                <h2>Habla con un experto.</h2>
+                <p class="modal-intro">Cuéntanos sobre tu operación y nuestro equipo analizará cómo MexiPay puede ayudarte.</p>
+                
+                <form class="contact-form" id="contact-form">
+                    <div class="form-group">
+                        <label for="name">Nombre</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="company">Empresa</label>
+                        <input type="text" id="company" name="company" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Correo corporativo</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Teléfono</label>
+                        <input type="tel" id="phone" name="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="interest">¿En qué podemos ayudarte?</label>
+                        <select id="interest" name="interest">
+                            <option value="agregacion">Agregación</option>
+                            <option value="procesamiento">Procesamiento</option>
+                            <option value="comercios">Soluciones para comercios</option>
+                            <option value="integraciones">Integraciones</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Mensaje</label>
+                        <textarea id="message" name="message" placeholder="Cuéntanos brevemente sobre tu operación o proyecto." rows="3"></textarea>
+                    </div>
+                    <!-- UI logic requires API connection to activate submit button fully, for now it just shows disabled/warning visually via JS or simply disabled visually until connected. -->
+                    <button type="submit" class="btn btn-primary btn-submit" id="submit-btn" disabled>
+                        <span>Enviar solicitud</span>
+                        <div class="dev-warning">Endpoint pendiente</div>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/lenis@1.0.45/dist/lenis.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="views.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

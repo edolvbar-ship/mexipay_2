@@ -1,0 +1,47 @@
+<label class="items-center cursor-pointer flex item-center">
+    <ng-content select="label">
+        <span 
+        [ngClass]="{
+            'text-primary font-bold': variant == 'secondary', 
+            'order-last ml-3': labelOn == 'right',
+            'mr-3': labelOn == 'left'
+        }"  
+        class="shrink text-sm font-medium  capitalize"
+        >
+            {{label}}<sup *ngIf="required"><i class="pi pi-asterisk text-red text-[0.5rem]" ></i></sup>
+        </span>
+    </ng-content>
+    <input 
+    [name]="name"
+    [type]="type"
+    [disabled]="disabled"
+    [value]="value"
+    [checked]="checked" 
+    (change)="onInput($event)" 
+    [ngClass]="{
+        'sr-only peer': !showPlain,
+        'text-primary': showPlain,
+        'h-1 w-1': size == 'xs',
+        'h-2 w-2': size == 'sm',
+        'h-3 w-3': size == 'md',
+        'h-4 w-4': size == 'lg',
+        'h-5 w-5': size == 'xl',
+    }"
+    />
+    <div *ngIf="!showPlain" 
+        class="relative border border-2 border-light-gray peer-focus:outline-none peer-focus:ring-primary dark:peer-focus:ring-primary rounded-full peer dark:bg-light-gray peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:bg-primary after:border-gray after:border after:rounded-full peer-checked:after:bg-primary after:bg-primary after:transition-all dark:border-light-gray peer-checked:bg-light-gray peer:bg-primary"
+        [ngClass]="{
+            'min-w-6  h-4 after:h-3 after:w-3': size == 'xs',
+            'min-w-8  h-5 after:h-4 after:w-4': size == 'sm',
+            'min-w-10  h-6 after:h-5 after:w-5': size == 'md',
+            'min-w-12 h-7 after:h-6 after:w-6': size == 'lg',
+            'min-w-14 h-8 after:h-7 after:w-7': size == 'xl',
+        }"
+    ></div>
+</label>
+<div *ngIf="required" class="bottom-0 bg-white left- text-red flex items-center w-full" [ngClass]="{'invisible': !isInvalid()}" >
+    <i class="pi pi-exclamation-circle text-lg pr-2" ></i>
+    <span>
+        {{getError(control)}}
+    </span>
+</div>

@@ -1,0 +1,10 @@
+<div class="flex items-center gap-4 text-black">
+    <span class="text-sm">Número de elementos por página </span>
+    <p-select
+        [options]="options"
+        [(ngModel)]="itemsPerPage"
+        optionLabel="code"
+        (onChange)="onChange($event)"
+        placeholder="10"
+        class="text-[13px] bg-white items-center hover:bg-light-primary"/>
+</div>

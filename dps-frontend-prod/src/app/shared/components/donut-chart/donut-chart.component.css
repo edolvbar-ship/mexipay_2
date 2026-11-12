@@ -1,0 +1,7 @@
+::ng-deep donut-chart div {
+    width: 96px !important;  
+    height: 96px !important;
+    display: inline-block;
+    margin: 0 auto;
+}
+

@@ -1,0 +1,523 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'PCI DSS 4.0 - Application Infrastructure (Complete)'
+
+Parameters:
+  EnvironmentType:
+    Type: String
+    AllowedValues: [qa, staging, prod]
+    Default: qa
+  EnvironmentRegion:
+    Type: String
+    Default: us-east-1
+  DomainName:
+    Type: String
+  AppSSLCertificateArn:
+    Type: String
+    Default: "arn:aws:acm:region:account:certificate/placeholder"
+  ApiSSLCertificateArn:
+    Type: String
+    Default: "arn:aws:acm:region:account:certificate/placeholder"
+  HostedZoneId:
+    Type: String
+  RdsRegion:
+    Type: String
+    Description: AWS Region of the RDS VPC
+
+Conditions:
+  CreateNewCertApp: !Equals [!Ref AppSSLCertificateArn, 'arn:aws:acm:region:account:certificate/placeholder']
+  CreateNewCertApi: !Equals [!Ref ApiSSLCertificateArn, 'arn:aws:acm:region:account:certificate/placeholder']
+  CreateHostedZone: !Equals [!Ref HostedZoneId, "CREATE_NEW"]
+
+Resources:
+
+  # Route 53
+  AppHostedZone:
+    Type: AWS::Route53::HostedZone
+    Condition: CreateHostedZone
+    Properties:
+      Name: !Ref DomainName
+      HostedZoneConfig:
+        Comment: !Sub 'Zone ${EnvironmentType}.${DomainName} environment'
+  ApiHostedZone:
+    Type: AWS::Route53::HostedZone
+    Condition: CreateHostedZone
+    Properties:
+      Name: !Sub 'api.${DomainName}'
+      HostedZoneConfig:
+        Comment: !Sub 'Zone api.${EnvironmentType}.${DomainName} environment'
+
+  # ACM Certificate
+  AppCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateNewCertApp
+    Properties:
+      DomainName: !Ref DomainName
+      SubjectAlternativeNames:
+        - !Sub 'www.${DomainName}'
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !If [CreateHostedZone, !Ref AppHostedZone, !Ref HostedZoneId]
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateNewCertApi
+    Properties:
+      DomainName: !Sub 'api.${DomainName}'
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Sub 'api.${DomainName}'
+          HostedZoneId: !If [CreateHostedZone, !Ref ApiHostedZone, !Ref HostedZoneId]
+  # VPC and Networking
+  USvpc:
+    Type: 'AWS::EC2::VPC'
+    DeletionPolicy: Delete
+    Properties:
+      CidrBlock: '10.0.0.0/16'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: 'PCI-DSS'
+          Value: 'true'
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-pci-vpc-app'
+
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    DeletionPolicy: Delete
+    Properties:
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-pci-igw'
+
+  VPCGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref USvpc
+      InternetGatewayId: !Ref InternetGateway
+
+  BalancerSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref USvpc
+      CidrBlock: '10.0.20.0/24'
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-subnet-balancer1'
+
+  BalancerSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref USvpc
+      CidrBlock: '10.0.21.0/24'
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-subnet-balancer2'
+
+  PublicSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref USvpc
+      CidrBlock: '10.0.1.0/24'
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-public-1'
+
+  PublicSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref USvpc
+      CidrBlock: '10.0.2.0/24'
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-public-2'
+
+  PrivateSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref USvpc
+      CidrBlock: '10.0.3.0/24'
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-private-1'
+        - Key: 'PCI-Scope'
+          Value: 'CDE'
+
+  PrivateSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref USvpc
+      CidrBlock: '10.0.4.0/24'
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-private-2'
+        - Key: 'PCI-Scope'
+          Value: 'CDE'
+
+  BalancerRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref USvpc
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-balancer-rt'
+
+  BalancerRoute:
+    Type: 'AWS::EC2::Route'
+    DeletionPolicy: Delete
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref BalancerRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+
+  BalancerSubnet1RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    DeletionPolicy: Delete
+    Properties:
+      SubnetId: !Ref BalancerSubnet1
+      RouteTableId: !Ref BalancerRouteTable
+
+  BalancerSubnet2RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    DeletionPolicy: Delete
+    Properties:
+      SubnetId: !Ref BalancerSubnet2
+      RouteTableId: !Ref BalancerRouteTable
+
+  NatEIP:
+    Type: 'AWS::EC2::EIP'
+    DeletionPolicy: Delete
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: 'AWS::EC2::NatGateway'
+    DeletionPolicy: Delete
+    Properties:
+      AllocationId: !GetAtt NatEIP.AllocationId
+      SubnetId: !Ref BalancerSubnet1
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-nat-1'
+
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref USvpc
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-public-rt'
+
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref NatGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    DeletionPolicy: Delete
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    DeletionPolicy: Delete
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    DeletionPolicy: Delete
+    Properties:
+      VpcId: !Ref USvpc
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${EnvironmentType}-private-rt-1'
+
+  PrivateRoute:
+    Type: 'AWS::EC2::Route'
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref NatGateway
+      #GatewayId: !Ref InternetGateway
+      
+  VPCPeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !Ref USvpc
+      PeerVpcId:
+        Fn::ImportValue:
+          !Sub
+            - "${EnvironmentType}-pci-rds-mx-VpcId"
+            - EnvironmentType: !Ref EnvironmentType
+      PeerRegion: !Ref RdsRegion
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentType}-app-to-rds-peering'
+        - Key: PCI-DSS
+          Value: 'true'
+      
+  PrivateRouteRDS:
+    Type: 'AWS::EC2::Route'
+    DeletionPolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock:
+        Fn::ImportValue:
+          !Sub
+            - '${EnvironmentType}-pci-rds-mx-VpcCidr'
+            - EnvironmentType: !Ref EnvironmentType
+      VpcPeeringConnectionId: !Ref VPCPeeringConnection
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    DeletionPolicy: Delete
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    DeletionPolicy: Delete
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
+  # Security Groups
+  FrontendALBSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    DeletionPolicy: Delete
+    Properties:
+      GroupDescription: !Sub 'BalancerSG FE - ${EnvironmentType}'
+      VpcId: !Ref USvpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '0.0.0.0/0'
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '10.0.0.0/16'
+      Tags:
+        - Key: 'PCI-DSS'
+          Value: 'Req 1.3'
+
+  BackendALBSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    DeletionPolicy: Delete
+    Properties:
+      GroupDescription: !Sub 'BalancerSG BE - ${EnvironmentType}'
+      VpcId: !Ref USvpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '0.0.0.0/0'
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '10.0.0.0/16'
+      Tags:
+        - Key: 'PCI-DSS'
+          Value: 'Req 1.3'
+
+  GeneralBalancerListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      Certificates:
+        - !If: [!Ref CreateNewCertApp, !Ref AppCertificate, !Ref AppSSLCertificateArn]
+      DefaultActions:
+        
+
+  FrontendEBSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    DeletionPolicy: Delete
+    Properties:
+      GroupDescription: !Sub 'BalancerSG FE - ${EnvironmentType}'
+      VpcId: !Ref USvpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref FrontendALBSG
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 10.0.0.0/16
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: '0.0.0.0/0'
+        - IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: '0.0.0.0/0'
+      Tags:
+        - Key: 'PCI-DSS'
+          Value: 'Req 6.5'
+
+  BackendEBSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    DeletionPolicy: Delete
+    Properties:
+      GroupDescription: !Sub 'BalancerSG - ${EnvironmentType}'
+      VpcId: !Ref USvpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref BackendALBSG
+        - IpProtocol: tcp
+          FromPort: 23356
+          ToPort: 23356
+          CidrIp:
+            Fn::ImportValue:
+              !Sub
+                - '${EnvironmentType}-pci-rds-mx-VpcCidr'
+                - EnvironmentType: !Ref EnvironmentType
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 23356
+          ToPort: 23356
+          CidrIp:
+            Fn::ImportValue:
+              !Sub
+                - '${EnvironmentType}-pci-rds-mx-VpcCidr'
+                - EnvironmentType: !Ref EnvironmentType
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '10.0.0.0/16'
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: '0.0.0.0/0'
+        - IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: '0.0.0.0/0'
+      Tags:
+        - Key: 'PCI-DSS'
+          Value: 'Req 6.5'
+        - Key: 'PCI-Scope'
+          Value: 'CDE'
+
+Outputs:
+  AppHostedZoneId:
+    Value: !If [CreateHostedZone, !Ref AppHostedZone, !Ref HostedZoneId]
+    Export:
+      Name: !Sub '${AWS::StackName}-AppHostedZoneId'
+  ApiHostedZoneId:
+    Value: !If [CreateHostedZone, !Ref ApiHostedZone, !Ref HostedZoneId]
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiHostedZoneId'
+  ApplicationVpcId:
+    Value: !Ref USvpc
+    Export:
+      Name: !Sub '${AWS::StackName}-ApplicationVpcId'
+  ApplicationVpcCidr:
+    Value: !GetAtt USvpc.CidrBlock
+    Export:
+      Name: !Sub '${AWS::StackName}-ApplicationVpcCidr'
+  PrivateSubnet1Id:
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateSubnet1Id'
+  PrivateSubnet2Id:
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateSubnet2Id'
+  PublicSubnet1Id:
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub '${AWS::StackName}-PublicSubnet1Id'
+  PublicSubnet2Id:
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub '${AWS::StackName}-PublicSubnet2Id'
+  BalancerSubnet1Id:
+    Value: !Ref BalancerSubnet1
+    Export:
+      Name: !Sub '${AWS::StackName}-BalancerSubnet1'
+  BalancerSubnet2Id:
+    Value: !Ref BalancerSubnet2
+    Export:
+      Name: !Sub '${AWS::StackName}-BalancerSubnet2'
+  AppCertificate:
+    Value:
+        Fn::If:
+          - CreateNewCertApp
+          - !Ref AppCertificate
+          - !Ref AppSSLCertificateArn
+    Export:
+      Name: !Sub '${AWS::StackName}-AppCertificate'
+  ApiCertificate:
+    Value:
+        Fn::If:
+          - CreateNewCertApi
+          - !Ref ApiCertificate
+          - !Ref ApiSSLCertificateArn
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiCertificate'
+  BackendEBSG:
+    Value: !Ref BackendEBSG
+    Export:
+      Name: !Sub '${AWS::StackName}-BackendEBSG'
+  FrontendEBSG:
+    Value: !Ref FrontendEBSG
+    Export:
+      Name: !Sub '${AWS::StackName}-FrontendEBSG'
+  TargetGroupFrontend:
+    Value: !Ref TargetGroupFrontend
+    Export: !Sub $AWS::StackName-TargetGroupFrontend
+  TargetGroupAdmin:
+    Value: !Ref TargetGroupAdmin
+    Export: !Sub $AWS::StackName-TargetGroupAdmin
+  TargetGroupProcessing:
+    Value: !Ref TargetGroupProcessing
+    Export: !Sub $AWS::StackName-TargetGroupProcessing
+  TargetGroupHeavy:
+    Value: !Ref TargetGroupHeavy
+    Export: !Sub $AWS::StackName-TargetGroupHeavy
+  DomainName:
+    Value: !Ref DomainName
+    Export:
+      Name: !Sub '${AWS::StackName}-DomainName'

@@ -1,0 +1,11 @@
+<div class="flex align-items-center justify-content-end w-full gap-8">
+    <div class="flex space-x-4">
+        <p-paginator
+            (onPageChange)="onPageChange($event)"
+            [rows]="rows" 
+            [totalRecords]="totalRecords" 
+            [showFirstLastIcon]="false" 
+            class="space-x-4">
+        </p-paginator>
+    </div>
+</div>

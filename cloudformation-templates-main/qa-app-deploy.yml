@@ -1,0 +1,21 @@
+template-file-path: pci-app-infrastructure.yml
+parameters:
+  EnvironmentRegion: us-east-2
+  EnvironmentType: qa
+  FrontendSourceBundle: >-
+    pci-qa-app-bundles-502274763910-us-east-2-migration5/qa-mexipay-frontend-202608171127.zip
+  HostedZoneId: CREATE_NEW
+  MainDBEndpoint: qa-pci-rds-mx-maindb-x75jsgym5uzz.c5gigk48sis2.us-east-2.rds.amazonaws.com
+  MXvpcCidr: 10.1.0.0/16
+  MXvpcId: vpc-01946615b2c34d09c
+  RDSSecurityGroupId: sg-0d96c77eb1e3abd9e
+  SSLCertificateArn: >-
+    arn:aws:acm:us-east-2:502274763910:certificate/c953d151-6f87-4e82-b617-4f476115a156
+  DBName: db_capapay_gw_prod
+  DBUsername: DBUsername
+  DBMasterUserPassword: P5KCErudSEKHeER
+  BackendSourceBundle: >-
+    pci-qa-app-bundles-502274763910-us-east-2-migration5/qa-dps-backend-20260817.zip
+  EnvironmentPlatform: Node.js 22 running on 64bit Amazon Linux 2023/6.11.2
+  DomainName: qa.drakops.com.mx
+tags: {}

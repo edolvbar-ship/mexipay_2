@@ -1,0 +1,331 @@
+<section-title
+    title="Clientes"
+    textBtn="Regresar"
+    subHead="Relación de clientes"
+    [linkText]="linkText"
+    [canCreate]="true"
+    [icon]="'UNDO'"
+>
+</section-title>
+
+<section class="space-y-6 mb-6">
+    <section>
+        <card-container>
+            <div class="h-5 mb-12">
+                <span class="flex gap-4">
+                <div
+                    class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center"
+                >
+                    <text-title text="1" size="xsmall" variant="tertiary"> </text-title>
+                </div>
+                <text-title text="Datos de Cliente" size="xsmall" variant="secondary">
+                </text-title>
+                </span>
+            </div>
+        
+            <form (submit)="$event.preventDefault()" [formGroup]="clientData">
+        
+                <div class="space-y-6 lg:space-y-12">
+                <!-- Grupo de inputs Nombre de cliente, nombre comercial y representante legal -->
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <app-input-select
+                            id="'personId'"
+                            class=""
+                            label="Tipo de Persona"
+                            [formControlName]="'personId'"
+                            [options]="personType"
+                        >
+                        </app-input-select>
+                        
+                        <app-input-text
+                        id="commercialName"
+                        label="Nombre Comercial"
+                        variant="primary"
+                        formControlName="commercialName"
+                        [maxlength]="45"
+                        allowedPattern="[^0-9<>=]"
+                        ></app-input-text>
+                    </div>
+            
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <app-input-text
+                            id="companyName"
+                            label="Razón Social/Persona Física"
+                            variant="primary"
+                            formControlName="companyName"
+                            [maxlength]="400"
+                            allowedPattern="[^0-9<>=]"
+                        >
+                        </app-input-text>
+                        <app-input-text
+                            id="rfc"
+                            label="RFC"
+                            formControlName="rfc"
+                            upper
+                            [maxlength]="16"
+                        >
+                        </app-input-text>
+                    </div>
+            
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <app-input-text
+                            id="representative"
+                            label="Representante"
+                            formControlName="representative"
+                            [maxlength]="45"
+                        >
+                        </app-input-text>
+                        <app-input-text
+                            id="url"
+                            label="URL"
+                            formControlName="url"
+                            [maxlength]="150"
+                        >
+                        </app-input-text>
+                    </div>
+            
+                    <div class="grid gap-6 grid-cols-2 lg:grid-cols-6">
+                        <!-- Grupo de inputs Calle, No Exterior, No Interior, Colonia y CP -->
+                        <app-input-text
+                            id="street"
+                            label="Calle"
+                            class="col-span-2"
+                            formControlName="street"
+                            [maxlength]="40"
+                            >
+                        </app-input-text>
+                        <app-input-text
+                                id="outerNumber"
+                                label="Nº Exterior"
+                                class="col-span-1"
+                                formControlName="outerNumber"
+                                [maxlength]="10"
+                                >
+                        </app-input-text>
+                                <app-input-text
+                                id="interiorNumber"
+                                label="Nº Interior"
+                                class="col-span-1"
+                                formControlName="interiorNumber"
+                                [maxlength]="10"
+                                >
+                                </app-input-text>
+                                <app-input-text
+                                id="'suburb'"
+                                label="Colonia"
+                                class="col-span-2"
+                                formControlName="suburb"
+                                [maxlength]="40"
+                            >
+                            </app-input-text>
+                    </div>
+                    <div class="grid gap-6 lg:grid-cols-4">
+                        <!-- Grupo de inputs Calle, No Exterior, No Interior, Colonia y CP -->
+                        <app-input-text
+                            id="town"
+                            label="Municipio"
+                            formControlName="town"
+                            [maxlength]="40"
+                            
+                            >
+                        </app-input-text>
+                        <app-input-select
+                                id="state"
+                                label="Estado"
+                                formControlName="state"
+                                [options]="states"
+        
+                                >
+                        </app-input-select>
+                                <app-input-select
+                                id="'country'"
+                                label="País"
+                                formControlName="country"
+                                [options]="countries"
+                                >
+                                </app-input-select>
+                                <app-input-text
+                                id="'zipCode'"
+                                label="Código Postal"
+                                formControlName="zipCode"
+                                [maxlength]="5"
+                                [minlength]="5"
+                                allowedPattern="[0-9]"
+                                
+                                
+                            >
+                            </app-input-text>
+                    </div>
+                    <div class="grid gap-6 lg:grid-cols-5">
+                        <app-input-textarea
+                            class="lg:col-span-3"
+                            label="Descripción/Referencias"
+                            formControlName="description"
+                            [maxlength]="2000"
+                        ></app-input-textarea>
+
+                        <app-input-textarea
+                        id="commercialAgent"
+                        label="Agente Comercial"
+                        class="lg:col-span-2"
+                        [maxlength]="1000"
+                        formControlName="commercialAgent"
+                    >
+                    </app-input-textarea>
+                    </div>
+                </div>
+            </form>
+        </card-container>
+    </section>
+
+    <section>
+        <card-container>
+            <div class="h-5 mb-12">
+                <span class="flex gap-4">
+                <div
+                    class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center"
+                >
+                    <text-title text="2" size="xsmall" variant="tertiary"> </text-title>
+                </div>
+                <text-title text="Datos de Contacto" size="xsmall" variant="secondary">
+                </text-title>
+                </span>
+            </div>
+        
+            <form (submit)="$event.preventDefault()" [formGroup]="contactInfo">
+        
+                <div class="space-y-6 lg:space-y-12">
+                <!-- Grupo de inputs Nombre de cliente, nombre comercial y representante legal -->
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <app-input-text
+                            id="name"
+                            label="Nombre"
+                            formControlName="name"
+                        >
+                        </app-input-text>
+                        <app-input-text
+                            id="commercialName"
+                            label="Rol"
+                            class=""
+                            formControlName="commercialName"
+                        >
+                        </app-input-text>
+                    </div>
+            
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <app-input-text #emailRef
+                            id="email"
+                            label="Correo Electrónico"
+                            formControlName="email"
+                            [maxlength]="150"
+                        >
+                        </app-input-text>
+                        <app-input-text
+                            id="phoneNumber"
+                            label="Teléfono Principal"
+                            formControlName="phoneNumber"
+                            mask="(000) 000-0000*"
+                            [maxlength]="15"
+                            
+                        >
+                        </app-input-text>
+                    </div>
+            
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <app-input-text
+                            id="alternativePhone"
+                            label="Teléfono Alterno"
+                            formControlName="alternativePhone"
+                            mask="(000) 000-0000*"
+                            [maxlength]="15"
+                        >
+                        </app-input-text>
+                        <app-input-text
+                            id="mobilePhone"
+                            label="Celular"
+                            formControlName="mobilePhone"
+                            mask="(000) 000-0000*"
+                            [maxlength]="15"
+                        >
+                        </app-input-text>
+                    </div>
+                </div>
+            </form>
+        </card-container>
+    </section>
+
+    <section>
+        <card-container>
+            
+        
+                <div class="h-5 mb-12">
+                    <span class="flex gap-4">
+                    <div
+                        class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center"
+                    >
+                        <text-title text="3" size="xsmall" variant="tertiary"> </text-title>
+                    </div>
+                    <text-title text="Datos Bancarios" size="xsmall" variant="secondary">
+                    </text-title>
+                    </span>
+                </div>
+                
+                <form (submit)="$event.preventDefault()" [formGroup]="bankData">
+            
+                <div class="space-y-6 lg:space-y-12">
+                <!-- Grupo de inputs Nombre de cliente, nombre comercial y representante legal -->
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <app-input-text
+                            id="'bank'"
+                            label="Banco"
+                            formControlName="bank"
+                            [maxlength]="10"
+                        >
+                        </app-input-text>
+                        <app-input-text
+                            id="'card'"
+                            label="Tarjeta"
+                            formControlName="card"
+                            mask="XXXX XXXX XXXX 0000"
+                        >
+                        </app-input-text>
+                    </div>
+            
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <app-input-text
+                            id="'account'"
+                            label="No. Cuenta"
+                            formControlName="account"
+                            [maxlength]="21"
+                            mask="00000XXXXXXXXXXX00000*"
+                        >
+                        </app-input-text>
+                        <app-input-text
+                            id="accountClabe"
+                            label="CLABE Interbancaria"
+                            formControlName="accountClabe"
+                            [maxlength]="21"
+                            mask="000 000 XXXXXXXX000 0"
+                        >
+                        </app-input-text>
+                    </div>
+                </div>
+            </form>
+        </card-container>
+    </section>
+    
+</section>
+
+
+<div class="flex justify-end gap-6">
+        <action-button
+            (click)="resetForm()"
+            [variant]="'secondary'"
+            [text]="'Limpiar'"
+        ></action-button>
+        <action-button
+            (click)="saveForm()"
+            [text]="'Guardar'"
+            [linkIcon]="'SAVE'"
+        ></action-button>
+</div>

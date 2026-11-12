@@ -1,0 +1,146 @@
+<section-title
+    title="Movimientos">
+</section-title>
+<div class="grid lg:grid-cols-10 gap-4 mb-6 sm:grid-cols-1 ">
+    <div class="grid lg:col-span-7 grid-cols-3 gap-4 sm:grid-cols-1 md:grid-cols-3">
+        <card-container class="">
+            <div class="h-20">
+                <text-title
+                        text="Total de Transacciones"
+                        size="medium">
+                    </text-title>
+            </div>
+                <div class="flex items-center">
+                    <div class="flex items-center w-1/2">
+                        <div>
+                            <span class="flex items-center">
+                                <div class="size-3 bg-primary rounded-full mr-2"></div>
+                                <text-type
+                                    text="43 Aprobadas"
+                                    size="xsmall">
+                                </text-type>
+                            </span>
+                            <span class="flex items-center">
+                                <div class="size-3 bg-blue rounded-full mr-2"></div>
+                                <text-type
+                                    text="12 Rechazadas"
+                                    size="xsmall">
+                                </text-type>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-center w-1/2">
+                        <img src="./../../../assets/gray-chart.svg" alt="" class="mx-auto my-auto">
+                    </div>
+                </div>
+        </card-container>
+        <card-container class="h-full">
+            <div class="h-20">
+                <text-title
+                    text="Tipo de Tarjeta"
+                    size="medium">
+                </text-title>
+            </div>
+                <div class="flex">
+                    <div class="flex items-center w-1/2">
+                        <div>
+                            <span class="flex items-center">
+                                <div class="size-3 bg-primary rounded-full mr-2"></div>
+                                <text-type
+                                    text="Débito"
+                                    size="xsmall">
+                                </text-type>
+                            </span>
+                            <span class="flex items-center">
+                                <div class="size-3 bg-blue rounded-full mr-2"></div>
+                                <text-type
+                                    text="Crédito"
+                                    size="xsmall">
+                                </text-type>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-center w-1/2">
+                        <img src="./../../../assets/gray-chart.svg" alt="" class="mx-auto my-auto">
+                    </div>
+                </div>
+        </card-container>
+        <card-container class="">
+            <div class="h-20">
+                <text-title
+                    text="Marca de Tarjeta"
+                    size="medium">
+                </text-title>
+            </div>
+                <div class="flex">
+                    <div class="flex items-center w-1/2">
+                        <div>
+                            <span class="flex items-center">
+                                <div class="size-3 bg-primary rounded-full mr-2"></div>
+                                <text-type
+                                    text="Mastercard"
+                                    size="xsmall">
+                                </text-type>
+                            </span>
+                            <span class="flex items-center">
+                                <div class="size-3 bg-blue rounded-full mr-2"></div>
+                                <text-type
+                                    text="Visa"
+                                    size="xsmall">
+                                </text-type>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-center w-1/2">
+                        <img src="./../../../assets/gray-chart.svg" alt="" class="mx-auto my-auto">
+                    </div>
+                </div>
+        </card-container>
+    </div>
+    <div class="lg:col-span-3 sm:col-span-1 grid-cols-3 content-center">
+        <div class="flex justify-end">
+            <div class="flex gap-4">
+                <button
+                    class="flex items-center justify-center h-8 rounded-full min-w-32 px-4 font-medium text-[15px] border-[1px] border-light-gray">
+                    <img src="../../../assets/core-icons/ico-date.svg" class="mr-2 w-4 h-4">
+                    <span class="text-[12px]">1 ene 2023 - 31 dic 2023</span>
+                    <img src="../../../assets/core-icons/ico-down.svg" class="ml-2 w-2.5">
+                </button>
+                <button
+                    class="flex items-center justify-center h-8 rounded-full min-w-32 px-4 font-medium text-[15px] border-[1px] bg-primary">
+                    <span class="text-[13px] text-white">Exportar</span>
+                    <img src="../../../assets/core-icons/ico-export.svg" class="ml-2 w-4 h-4">
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<card-container>
+    <div>
+        <div class="mb-7 flex item-center justify-between">
+            <div class="w-1/3">
+                <search-bar>
+                </search-bar>
+            </div>
+            <div class="flex item-center space-x-11">
+                <div>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="" class="sr-only peer">
+                        <span class="ms-3 text-sm font-medium mr-4">Contracargos</span>
+                        <div class="relative w-6 h-4 border border-2 border-light-gray peer-focus:outline-none peer-focus:ring-primary dark:peer-focus:ring-primary rounded-full peer dark:bg-light-gray peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:bg-primary after:border-gray after:border after:rounded-full after:h-3 after:w-3 peer-checked:after:bg-primary after:bg-primary after:transition-all dark:border-light-gray peer-checked:bg-light-gray peer:bg-primary"></div>
+                        <span class="ms-3 text-sm font-medium text-gray">Transacciones</span>
+                    </label>  
+                </div>
+                <action-button
+                    [variant]="'secondary'"
+                    [linkIcon]="'ico-link'">
+                </action-button>
+            </div>
+        </div>
+    </div>
+    <basic-table>
+    </basic-table>
+    <table-footer></table-footer>
+    
+</card-container>

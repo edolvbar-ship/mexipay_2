@@ -1,0 +1,13 @@
+<app-header
+    [isUserInfoVisible]="true"
+    (accountDetail)="getDetail()"
+></app-header>
+<div class="flex w-full">
+    <menu-sidebar class="w-28 lg:w-64 mt-8"></menu-sidebar>
+    <main-content class="m-8 flex-grow overflow-auto lg:max-w-[calc(100%-16rem)]">
+    </main-content>
+</div>
+<app-profile-modal
+    (visibleChange)="getDetail()"
+    [isVisible]="isVisible">
+</app-profile-modal>

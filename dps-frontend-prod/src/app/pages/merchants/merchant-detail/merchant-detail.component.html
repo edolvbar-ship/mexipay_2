@@ -1,0 +1,75 @@
+<section-title
+    title="Comercios"
+    textBtn="Regresar"
+    subHead="Relación de comercios por banco adquirente"
+    [linkText]="linkText"
+    [canCreate]="true"
+    [icon]="'UNDO'"
+    >
+</section-title>
+<page-detail
+    [title]="'Información del comercio'"
+    [data]="infoMerchant"
+></page-detail>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+  <!-- Profile Details Display -->
+  <div *ngIf="selectedProfileOperations" class="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+      <span class="material-icons mr-2 text-gray-400">Assignment</span>
+      Perfil Transaccional (Legacy)
+    </h3>
+    <div class="space-y-4">
+      <div>
+        <span class="text-xs font-bold text-gray-500 block uppercase tracking-wider">Aplicación:</span>
+        <span class="text-sm font-medium text-gray-900">{{selectedProfileOperations.aplicacion}}</span>
+      </div>
+      <div>
+        <span class="text-xs font-bold text-gray-500 block uppercase tracking-wider">Transacciones Permitidas:</span>
+        <div class="flex flex-wrap gap-2 mt-2">
+          <span *ngFor="let t of selectedProfileOperations.trans" class="inline-block px-3 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full border border-green-100">
+            {{t}}
+          </span>
+        </div>
+      </div>
+      <div>
+        <span class="text-xs font-bold text-gray-500 block uppercase tracking-wider">Indicadores / Servicios:</span>
+        <div class="flex flex-wrap gap-2 mt-2">
+          <span *ngFor="let i of selectedProfileOperations.indicadores" class="inline-block px-3 py-1 bg-yellow-50 text-yellow-700 text-xs font-medium rounded-full border border-yellow-100">
+            {{i}}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MCC Operations Display -->
+  <div *ngIf="mccOperations.length > 0" class="p-6 bg-white rounded-lg shadow-sm border border-blue-200">
+    <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+      <span class="material-icons mr-2 text-blue-400">List</span>
+      Operaciones por MCC (Nueva arquitectura)
+    </h3>
+    <p class="text-xs text-blue-600 mb-4">Estas operaciones se definen automáticamente según el giro del comercio.</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div *ngFor="let op of mccOperations" class="flex items-center p-3 bg-blue-50 rounded-md border border-blue-100">
+        <span class="material-icons text-blue-500 mr-3">{{op.icon_name || 'settings'}}</span>
+        <div>
+          <span class="text-sm font-medium text-blue-900 block">{{op.name}}</span>
+          <span class="text-[10px] text-blue-600 uppercase" *ngIf="op.requires_tip">Requiere Propina</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MSI Configuration Section -->
+  <div class="p-6 bg-white rounded-lg shadow-sm border border-green-200">
+    <h3 class="text-lg font-semibold text-green-800 mb-4 flex items-center">
+      <span class="material-icons mr-2 text-green-400">credit_card</span>
+      Configuración MSI (Meses Sin Intereses)
+    </h3>
+    <p class="text-xs text-green-600 mb-4">Configurar planes de pago a meses sin intereses para este comercio.</p>
+
+    <!-- MSI Config Component -->
+    <app-msi-config [idMerchant]="idMerchant || 0"></app-msi-config>
+  </div>
+</div>

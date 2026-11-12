@@ -1,0 +1,33 @@
+{
+  "testName": "Chip (Entry Mode 05) - EMV Tags as TLV String Format",
+  "description": "Chip transaction with EMV tags provided as a single TLV hex string instead of array format. Tests normalizeEmvTags() string parser.",
+  "expectedResult": "PASS",
+  "endpoint": "/gateway/v1/retail/charge",
+  "headers": {
+    "commerce-id": "9953404",
+    "commerce-name": "MEX CARLS PRUEBAS",
+    "x-time": "1752345600",
+    "tkr": "1740695789753srW",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "reference": "TCTL01",
+    "amount": 321,
+    "entryMode": "051",
+    "entry_mode": "051",
+    "authentication": "pin",
+    "cardInformation": {
+      "card_number": "4152314611664742",
+      "bin": "415231",
+      "last4": "4742",
+      "cvv": "123",
+      "expiration_month": "11",
+      "expiration_year": "31",
+      "tk2": "4152314611664742D31112210000073705002"
+    },
+    "device": {
+      "serial": "TERM001"
+    },
+    "emvTags": "4F07A00000000310105A08415231461166474257134152314611664742D31112210000073705002F5F24033111305F2A0204845F3002201F5F340101820238008407A00000000310108E1A0000000000000000020142041E0402054203440341035E031F02950500000000009A032607119B02E8009C01009F02060000000003219F03060000000000009F090200969F100706011203A0A8119F1A0204849F1E063030303130359F21030618029F26084E8966E4B52EE8A99F2701809F3303E0B0C89F34034103019F3501229F360200529F37047E279C519F390105"
+  }
+}

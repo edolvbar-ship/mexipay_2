@@ -1,0 +1,66 @@
+<section-title title="Dispositivos" subHead="Relación de comercios por banco adquirido" />
+<div class="grid grid-cols-3 gap-4">
+    <div class="xl:space-x-4 col-span-2">
+        <card-container class="">
+            <table-layout [hiddenColumns]="hiddenColumns" [dataTable]="devices" [actions]="actions"  />
+        </card-container>
+    </div>
+    <card-container class="col-span-1">
+        <div>
+            <text-title text="Selecciona el Dispositivo Para Ver el Detalle." size="medium">
+            </text-title>
+            <div>
+                <img src="../../../assets/terminal.png" alt="">
+            </div>
+            <text-title class="leading-loose mt-2" text="Detalle del Dispositivo:" variant="secondary" size="regular">
+            </text-title>
+        </div>
+        <div *ngIf="true" class="spinner-overlay">
+            <div class="my-6 flex flex-col h-full"> 
+                <div *ngIf="isLoading" class="spinner-container w-full h-64 flex items-center justify-center">
+                    <i class="pi pi-spin pi-spinner text-primary" style="font-size: 2rem"></i>
+                </div>                
+        
+                <div *ngIf="!isLoading" [ngClass]="{'fade-in': detailDevice, 'fade-out': !detailDevice}" class="content">
+                    <p>
+                        <span class="text-primary font-bold">Cliente:</span>
+                        {{detailDevice?.Cliente}}
+                    </p>
+                    <p>
+                        <span class="text-primary font-bold">Comercio:</span>
+                        {{detailDevice?.Comercio}}
+                    </p>
+                    <p>
+                        <span class="text-primary font-bold">Correo Electrónico:</span>
+                        {{detailDevice?.Comercio}}
+                    </p>
+                    <p>
+                        <span class="text-primary font-bold">Versión:</span>
+                        {{detailDevice?.version}}
+                    </p>
+                    <p>
+                        <span class="text-primary font-bold">SO versión:</span>
+                        {{detailDevice?.SO}}
+                    </p>
+                    <p>
+                        <span class="text-primary font-bold">UUID:</span>
+                        {{detailDevice?.Terminal}}
+                    </p>
+                    <p>
+                        <span class="text-primary font-bold">Estatus:</span>
+                        {{detailDevice?.status}}
+                    </p>
+                    <p>
+                        <span class="text-primary font-bold">Terminal firmware:</span>
+                        {{detailDevice?.firmware}}
+                    </p>
+                    <p>
+                        <span class="text-primary font-bold">Terminal No. de Serie:</span>
+                        {{detailDevice?.Dispositivo}}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+    </card-container>
+</div>

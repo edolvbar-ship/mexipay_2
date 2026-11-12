@@ -1,0 +1,1320 @@
+From f5d9f49a0265bc8961d0a08d06bc0c26d82317bf Mon Sep 17 00:00:00 2001
+From: Isidoro Eskenazi <isidoroe@mexipay.mx>
+Date: Mon, 3 Aug 2026 08:23:27 -0600
+Subject: [PATCH] Remover componentes no utilizados en templates para evitar
+ advertencias en log
+
+---
+ src/app/app.component.ts                      |  6 +--
+ .../msi-bines/msi-bines.component.ts          |  6 +--
+ src/app/config/guards/auth.guard.ts           |  2 +-
+ src/app/config/guards/non-auth.guard.ts       |  2 +-
+ .../config/interceptors/auth.interceptor.ts   |  2 +-
+ .../config/interceptors/token.interceptor.ts  |  2 +-
+ .../database-explorer.component.html          |  2 +-
+ .../add-card-file/add-card-file.component.ts  |  2 -
+ src/app/pages/cards/cards.component.ts        | 12 +-----
+ .../new-card-form/new-card-form.component.ts  |  7 +--
+ .../new-aggregator-form.component.ts          |  2 -
+ .../new-bank-form/new-bank-form.component.ts  |  8 +---
+ .../new-business-form.component.ts            |  4 +-
+ .../mcc-operations.component.html             |  4 +-
+ .../msi-templates/msi-templates.component.ts  |  4 +-
+ .../new-person-type-form.component.ts         |  2 -
+ .../new-processors-form.component.ts          |  8 +---
+ .../new-transaction-mode-form.component.ts    |  8 +---
+ .../new-transaction-schema-form.component.ts  |  3 --
+ ...ew-transactional-profile-form.component.ts |  9 ----
+ .../new-url-target-form.component.ts          |  8 +---
+ .../pages/dashboard/dashboard.component.ts    | 12 ++----
+ src/app/pages/devices/devices.component.ts    |  7 +--
+ src/app/pages/files/files.component.ts        | 10 +----
+ .../generate-password.component.ts            |  4 +-
+ src/app/pages/login/login.component.ts        | 18 ++++----
+ .../pages/merchants/merchants.component.ts    | 14 +++---
+ .../contracharges/contracharges.component.ts  |  5 +--
+ .../movements/pos-json/pos-json.component.ts  |  2 -
+ .../transactions.component.ts                 |  2 +-
+ .../transactions/transactions.component.ts    |  2 +-
+ .../merchant-msi-config.component.ts          | 43 ++++++++++---------
+ .../list-payment-link.component.ts            |  6 ---
+ .../make-payment-form.component.ts            | 12 +-----
+ .../new-payment-link.component.ts             |  5 +--
+ .../payment-links/payment-links.component.ts  | 17 +++-----
+ .../dispertion/dispertion.component.ts        |  2 +-
+ .../statement-account.component.ts            |  2 +-
+ .../new-profile-form.component.ts             |  7 +--
+ .../new-user-tdm-form.component.ts            |  6 +--
+ .../security/users-tdm/users-tdm.component.ts |  6 +--
+ .../new-user-form/new-user-form.component.ts  |  5 +--
+ src/app/services/about/about.service.ts       |  2 +-
+ src/app/services/auth/auth.service.ts         |  6 +--
+ .../services/merchants/merchants.service.ts   |  6 +--
+ src/app/services/shared/shared.service.ts     |  2 +-
+ .../components/header/header.component.ts     |  2 +-
+ .../components/singout/singout.component.ts   |  2 +-
+ 48 files changed, 93 insertions(+), 217 deletions(-)
+
+diff --git a/src/app/app.component.ts b/src/app/app.component.ts
+index afeedaf..d437740 100644
+--- a/src/app/app.component.ts
++++ b/src/app/app.component.ts
+@@ -1,7 +1,4 @@
+ import {Component, HostListener, inject, OnInit} from '@angular/core';
+-import { MainLayoutComponent } from './shared/components/main-layout/main-layout.component';
+-import { HeaderComponent } from './shared/components/header/header.component';
+-import { LoginComponent } from './pages/login/login.component';
+ import { RouterOutlet } from '@angular/router';
+ import { PrimeNG } from 'primeng/config'
+ import { ToastModule } from 'primeng/toast';
+@@ -13,8 +10,7 @@ import { lastValueFrom } from 'rxjs';
+ import { AuthMeService } from './services/auth/auth-me/auth-me.service';
+ @Component({
+     selector: 'app-root',
+-    imports: [MainLayoutComponent, HeaderComponent, LoginComponent, RouterOutlet,
+-        ToastModule, MessageModule, ButtonModule, SpinnerComponent],
++    imports: [RouterOutlet, ToastModule, MessageModule, ButtonModule, SpinnerComponent],
+     templateUrl: './app.component.html',
+     styleUrl: './app.component.css'
+ })
+diff --git a/src/app/components/msi-bines/msi-bines.component.ts b/src/app/components/msi-bines/msi-bines.component.ts
+index 4160d5a..40acd00 100644
+--- a/src/app/components/msi-bines/msi-bines.component.ts
++++ b/src/app/components/msi-bines/msi-bines.component.ts
+@@ -1,3 +1,4 @@
++import { CommonModule } from '@angular/common';
+ import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+ import { MsiBinesService } from '../../services/msi-bines.service';
+@@ -19,9 +20,7 @@ import { MatSortModule } from '@angular/material/sort';
+ import { MatDialogModule } from '@angular/material/dialog';
+ import { MatCardModule } from '@angular/material/card';
+ import {
+-  MsiNationalBin,
+-  MsiBinRange,
+-  MsiBinFormData
++  MsiNationalBin
+ } from '../../shared/interfaces/msi.interface';
+ import { MsiBinDialogComponent, BinDialogData, BinDialogResult } from '../msi-bin-dialog/msi-bin-dialog.component';
+ import { Subject } from 'rxjs';
+@@ -31,6 +30,7 @@ import { takeUntil } from 'rxjs/operators';
+   selector: 'app-msi-bines',
+   standalone: true,
+   imports: [
++    CommonModule,
+     FormsModule,
+     ReactiveFormsModule,
+     MatSlideToggleModule,
+diff --git a/src/app/config/guards/auth.guard.ts b/src/app/config/guards/auth.guard.ts
+index 830a4fc..c3e3009 100644
+--- a/src/app/config/guards/auth.guard.ts
++++ b/src/app/config/guards/auth.guard.ts
+@@ -1,7 +1,7 @@
+ import { inject} from '@angular/core';
+ import { CanActivateFn, Router } from '@angular/router';
+ 
+-import { AuthService } from 'src/app/services/auth/auth.service'
++import { AuthService } from '@/app/services/auth/auth.service'
+ 
+ export const authGuard: CanActivateFn = (route, state) => {
+   const authService = inject(AuthService);
+diff --git a/src/app/config/guards/non-auth.guard.ts b/src/app/config/guards/non-auth.guard.ts
+index 05e7af0..7c8ec26 100644
+--- a/src/app/config/guards/non-auth.guard.ts
++++ b/src/app/config/guards/non-auth.guard.ts
+@@ -1,6 +1,6 @@
+ import { CanActivateFn } from '@angular/router';
+ import { inject } from '@angular/core';
+-import { AuthService } from 'src/app/services/auth/auth.service'
++import { AuthService } from '@/app/services/auth/auth.service'
+ import { Router } from '@angular/router';
+ 
+ export const nonAuthGuard: CanActivateFn = (route, state) => {
+diff --git a/src/app/config/interceptors/auth.interceptor.ts b/src/app/config/interceptors/auth.interceptor.ts
+index 1503965..d61841c 100644
+--- a/src/app/config/interceptors/auth.interceptor.ts
++++ b/src/app/config/interceptors/auth.interceptor.ts
+@@ -1,4 +1,4 @@
+-import { AuthService } from "src/app/services/auth/auth.service";
++import { AuthService } from "@/app/services/auth/auth.service";
+ import { HttpEvent, HttpInterceptorFn, HttpErrorResponse, HttpRequest, HttpHandler } from "@angular/common/http";
+ import { inject } from "@angular/core";
+ import { catchError, Observable, throwError } from "rxjs";
+diff --git a/src/app/config/interceptors/token.interceptor.ts b/src/app/config/interceptors/token.interceptor.ts
+index d1b4b6b..fbaf4b0 100644
+--- a/src/app/config/interceptors/token.interceptor.ts
++++ b/src/app/config/interceptors/token.interceptor.ts
+@@ -1,4 +1,4 @@
+-import { AuthService } from "src/app/services/auth/auth.service";
++import { AuthService } from "@/app/services/auth/auth.service";
+ import { HttpEvent, HttpInterceptorFn, HttpErrorResponse } from "@angular/common/http";
+ import { inject } from "@angular/core";
+ import { catchError, Observable, of, switchMap, throwError } from "rxjs";
+diff --git a/src/app/pages/admin/database-explorer/database-explorer.component.html b/src/app/pages/admin/database-explorer/database-explorer.component.html
+index c81f2d5..7a24a4b 100644
+--- a/src/app/pages/admin/database-explorer/database-explorer.component.html
++++ b/src/app/pages/admin/database-explorer/database-explorer.component.html
+@@ -262,7 +262,7 @@
+           <ng-template pTemplate="caption">
+             <div class="flex align-items-center justify-content-between">
+               <span class="text-lg font-semibold">
+-                {{ selectedTable?.tableName }} 
++                {{ selectedTable.tableName }} 
+                 <span class="text-sm text-color-secondary">({{ totalRecords | number }} registros)</span>
+               </span>
+               
+diff --git a/src/app/pages/cards/add-card-file/add-card-file.component.ts b/src/app/pages/cards/add-card-file/add-card-file.component.ts
+index 9a9791d..7591357 100644
+--- a/src/app/pages/cards/add-card-file/add-card-file.component.ts
++++ b/src/app/pages/cards/add-card-file/add-card-file.component.ts
+@@ -4,14 +4,12 @@ import { SectionTitleComponent } from '@/app/shared/components/section-title/sec
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { CommonModule } from '@angular/common';
+ import { Component, ElementRef, ViewChild } from '@angular/core';
+-import { RouterLink } from '@angular/router';
+ import { ToastrService } from 'ngx-toastr';
+ import { HttpClient } from '@angular/common/http';
+ 
+ @Component({
+     selector: 'app-add-card-file',
+     imports: [
+-        RouterLink,
+         CommonModule,
+         CardContainerComponent,
+         SectionTitleComponent,
+diff --git a/src/app/pages/cards/cards.component.ts b/src/app/pages/cards/cards.component.ts
+index 36b09d2..26ed8cc 100644
+--- a/src/app/pages/cards/cards.component.ts
++++ b/src/app/pages/cards/cards.component.ts
+@@ -1,13 +1,8 @@
+-import { routes } from '@/app/app.routes';
+-import { BasicTableComponent } from '@/app/shared/components/basic-table/basic-table.component';
+-import { HeaderTableSearchComponent } from '@/app/shared/components/header-table-search/header-table-search.component';
+-import { TableFooterComponent } from '@/app/shared/components/table-footer/table-footer.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+-import { ActivatedRoute, RouterLink } from '@angular/router';
++import { ActivatedRoute } from '@angular/router';
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+ import { ModalConfirmComponent } from '@/app/shared/components/modal-confirm/modal-confirm.component';
+-import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TableLayoutComponent } from '@/app/shared/components/table-layout/table-layout.component';
+ import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+ import { catchError, of, Subject, Subscription, takeUntil, tap } from 'rxjs';
+@@ -23,14 +18,9 @@ import { ActionButtonComponent } from "../../shared/components/action-button/act
+ @Component({
+     selector: 'app-cards',
+     imports: [
+-        SectionTitleComponent,
+         CardContainerComponent,
+         TextTitleComponent,
+         TextTypeComponent,
+-        BasicTableComponent,
+-        HeaderTableSearchComponent,
+-        TableFooterComponent,
+-        RouterLink,
+         ModalConfirmComponent,
+         TableLayoutComponent,
+         CommonModule,
+diff --git a/src/app/pages/cards/new-card-form/new-card-form.component.ts b/src/app/pages/cards/new-card-form/new-card-form.component.ts
+index 7ca7b04..606fe23 100644
+--- a/src/app/pages/cards/new-card-form/new-card-form.component.ts
++++ b/src/app/pages/cards/new-card-form/new-card-form.component.ts
+@@ -3,9 +3,8 @@ import { CardContainerComponent } from '@/app/shared/components/card-container/c
+ import { InputSelectComponent } from '@/app/shared/components/inputs/input-select/input-select.component';
+ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/input-text.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { Component, OnInit } from '@angular/core';
+-import { RouterLink, Router, ActivatedRoute } from '@angular/router';
++import { Router, ActivatedRoute } from '@angular/router';
+ 
+ import {
+   FormBuilder,
+@@ -20,7 +19,6 @@ import { BinesService } from '@/app/services/bines/bines.service';
+ 
+ import { tap } from 'rxjs';
+ import { CommonModule } from '@angular/common';
+-import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.service';
+ 
+ @Component({
+@@ -30,10 +28,7 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+         CardContainerComponent,
+         InputSelectComponent,
+         InputTextComponent,
+-        RouterLink,
+-        TextTypeComponent,
+         ActionButtonComponent,
+-        TextTitleComponent,
+         ReactiveFormsModule,
+         CommonModule
+     ],
+diff --git a/src/app/pages/catalogs/aggregator/new-aggregator-form/new-aggregator-form.component.ts b/src/app/pages/catalogs/aggregator/new-aggregator-form/new-aggregator-form.component.ts
+index f3e3385..0ac8472 100644
+--- a/src/app/pages/catalogs/aggregator/new-aggregator-form/new-aggregator-form.component.ts
++++ b/src/app/pages/catalogs/aggregator/new-aggregator-form/new-aggregator-form.component.ts
+@@ -4,7 +4,6 @@ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/in
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { Component, OnInit } from '@angular/core';
+-import { ToggleSwitch } from 'primeng/toggleswitch';
+ import { ActivatedRoute, Router } from '@angular/router';
+ 
+ import {
+@@ -26,7 +25,6 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+         ActionButtonComponent,
+         InputTextComponent,
+         TextTitleComponent,
+-        ToggleSwitch,
+         ReactiveFormsModule
+     ],
+     templateUrl: './new-aggregator-form.component.html',
+diff --git a/src/app/pages/catalogs/banks/new-bank-form/new-bank-form.component.ts b/src/app/pages/catalogs/banks/new-bank-form/new-bank-form.component.ts
+index e2bf76d..8e615d9 100644
+--- a/src/app/pages/catalogs/banks/new-bank-form/new-bank-form.component.ts
++++ b/src/app/pages/catalogs/banks/new-bank-form/new-bank-form.component.ts
+@@ -3,16 +3,13 @@ import { CardContainerComponent } from '@/app/shared/components/card-container/c
+ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/input-text.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { Component, OnInit } from '@angular/core';
+-import { ToggleSwitch } from 'primeng/toggleswitch';
+-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
++import { ActivatedRoute, Router } from '@angular/router';
+ 
+ import {
+   FormBuilder,
+   FormGroup,
+   ReactiveFormsModule,
+-  ValidationErrors,
+   Validators
+  } from '@angular/forms';
+ 
+@@ -25,12 +22,9 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+     imports: [
+         SectionTitleComponent,
+         CardContainerComponent,
+-        TextTypeComponent,
+         ActionButtonComponent,
+-        RouterLink,
+         InputTextComponent,
+         TextTitleComponent,
+-        ToggleSwitch,
+         ReactiveFormsModule
+     ],
+     templateUrl: './new-bank-form.component.html',
+diff --git a/src/app/pages/catalogs/business/new-business-form/new-business-form.component.ts b/src/app/pages/catalogs/business/new-business-form/new-business-form.component.ts
+index b5a76e5..6edbf7d 100644
+--- a/src/app/pages/catalogs/business/new-business-form/new-business-form.component.ts
++++ b/src/app/pages/catalogs/business/new-business-form/new-business-form.component.ts
+@@ -4,14 +4,12 @@ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/in
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { Component, OnInit } from '@angular/core';
+-import { ToggleSwitch } from 'primeng/toggleswitch';
+ import { ActivatedRoute, Router } from '@angular/router';
+ 
+ import {
+   FormBuilder,
+   FormGroup,
+   ReactiveFormsModule,
+-  ValidationErrors,
+   Validators
+  } from '@angular/forms';
+ 
+@@ -27,7 +25,7 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+         ActionButtonComponent,
+         InputTextComponent,
+         TextTitleComponent,
+-        ToggleSwitch,
++      
+         ReactiveFormsModule
+     ],
+     templateUrl: './new-business-form.component.html',
+diff --git a/src/app/pages/catalogs/mcc-operations/mcc-operations.component.html b/src/app/pages/catalogs/mcc-operations/mcc-operations.component.html
+index d4857c0..61a29b9 100644
+--- a/src/app/pages/catalogs/mcc-operations/mcc-operations.component.html
++++ b/src/app/pages/catalogs/mcc-operations/mcc-operations.component.html
+@@ -61,9 +61,9 @@
+ <div class="row mt-4" *ngIf="selectedCategory">
+   <div class="col-12">
+     <div class="alert alert-info">
+-      <strong>Filtered by:</strong> {{ selectedCategory?.name }} ({{ selectedCategory?.code }})
++      <strong>Filtered by:</strong> {{ selectedCategory.name }} ({{ selectedCategory.code }})
+       <br>
+-      <small>{{ selectedCategory?.description }}</small>
++      <small>{{ selectedCategory.description }}</small>
+     </div>
+   </div>
+ </div>
+diff --git a/src/app/pages/catalogs/msi-templates/msi-templates.component.ts b/src/app/pages/catalogs/msi-templates/msi-templates.component.ts
+index 9f363f4..17bcd72 100644
+--- a/src/app/pages/catalogs/msi-templates/msi-templates.component.ts
++++ b/src/app/pages/catalogs/msi-templates/msi-templates.component.ts
+@@ -379,8 +379,8 @@ interface TemplateFormData {
+                     <!-- Debug info -->
+                     <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                       Debug: Template={{selectedTemplateForApplication?.name || 'none'}},
+-                      Merchants={{selectedMerchants?.length || 0}},
+-                      Button Disabled={{!selectedTemplateForApplication || selectedMerchants?.length === 0}}
++                      Merchants={{selectedMerchants.length || 0}},
++                      Button Disabled={{!selectedTemplateForApplication || selectedMerchants.length === 0}}
+                     </div>
+ 
+                     <button mat-raised-button color="primary"
+diff --git a/src/app/pages/catalogs/person-type/new-person-type-form/new-person-type-form.component.ts b/src/app/pages/catalogs/person-type/new-person-type-form/new-person-type-form.component.ts
+index d33adb7..f816084 100644
+--- a/src/app/pages/catalogs/person-type/new-person-type-form/new-person-type-form.component.ts
++++ b/src/app/pages/catalogs/person-type/new-person-type-form/new-person-type-form.component.ts
+@@ -4,7 +4,6 @@ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/in
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { Component, OnInit } from '@angular/core';
+-import { ToggleSwitch } from 'primeng/toggleswitch';
+ import { ActivatedRoute, Router } from '@angular/router';
+ 
+ import {
+@@ -28,7 +27,6 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+         ActionButtonComponent,
+         InputTextComponent,
+         TextTitleComponent,
+-        ToggleSwitch,
+         ReactiveFormsModule
+     ],
+     templateUrl: './new-person-type-form.component.html',
+diff --git a/src/app/pages/catalogs/processors/new-processors-form/new-processors-form.component.ts b/src/app/pages/catalogs/processors/new-processors-form/new-processors-form.component.ts
+index 9aa9082..8a1c6ec 100644
+--- a/src/app/pages/catalogs/processors/new-processors-form/new-processors-form.component.ts
++++ b/src/app/pages/catalogs/processors/new-processors-form/new-processors-form.component.ts
+@@ -3,16 +3,13 @@ import { CardContainerComponent } from '@/app/shared/components/card-container/c
+ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/input-text.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { Component, OnInit } from '@angular/core';
+-import { ToggleSwitch } from 'primeng/toggleswitch';
+-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
++import { ActivatedRoute, Router } from '@angular/router';
+ 
+ import {
+   FormBuilder,
+   FormGroup,
+   ReactiveFormsModule,
+-  ValidationErrors,
+   Validators
+  } from '@angular/forms';
+ 
+@@ -25,12 +22,9 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+     imports: [
+         SectionTitleComponent,
+         CardContainerComponent,
+-        TextTypeComponent,
+         ActionButtonComponent,
+-        RouterLink,
+         InputTextComponent,
+         TextTitleComponent,
+-        ToggleSwitch,
+         ReactiveFormsModule
+     ],
+     templateUrl: './new-processors-form.component.html',
+diff --git a/src/app/pages/catalogs/transaction-mode/new-transaction-mode-form/new-transaction-mode-form.component.ts b/src/app/pages/catalogs/transaction-mode/new-transaction-mode-form/new-transaction-mode-form.component.ts
+index 676bf6f..d0e5394 100644
+--- a/src/app/pages/catalogs/transaction-mode/new-transaction-mode-form/new-transaction-mode-form.component.ts
++++ b/src/app/pages/catalogs/transaction-mode/new-transaction-mode-form/new-transaction-mode-form.component.ts
+@@ -3,16 +3,13 @@ import { CardContainerComponent } from '@/app/shared/components/card-container/c
+ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/input-text.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { Component, OnInit } from '@angular/core';
+-import { ToggleSwitch } from 'primeng/toggleswitch';
+-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
++import { ActivatedRoute, Router } from '@angular/router';
+ 
+ import {
+   FormBuilder,
+   FormGroup,
+   ReactiveFormsModule,
+-  ValidationErrors,
+   Validators
+  } from '@angular/forms';
+ 
+@@ -27,12 +24,9 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+     imports: [
+         SectionTitleComponent,
+         CardContainerComponent,
+-        TextTypeComponent,
+         ActionButtonComponent,
+-        RouterLink,
+         InputTextComponent,
+         TextTitleComponent,
+-        ToggleSwitch,
+         ReactiveFormsModule
+     ],
+     templateUrl: './new-transaction-mode-form.component.html',
+diff --git a/src/app/pages/catalogs/transaction-schema/new-transaction-schema-form/new-transaction-schema-form.component.ts b/src/app/pages/catalogs/transaction-schema/new-transaction-schema-form/new-transaction-schema-form.component.ts
+index 529ef8a..3269242 100644
+--- a/src/app/pages/catalogs/transaction-schema/new-transaction-schema-form/new-transaction-schema-form.component.ts
++++ b/src/app/pages/catalogs/transaction-schema/new-transaction-schema-form/new-transaction-schema-form.component.ts
+@@ -4,14 +4,12 @@ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/in
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { Component, OnInit } from '@angular/core';
+-import { ToggleSwitch } from 'primeng/toggleswitch';
+ import { ActivatedRoute, Router } from '@angular/router';
+ 
+ import {
+   FormBuilder,
+   FormGroup,
+   ReactiveFormsModule,
+-  ValidationErrors,
+   Validators
+  } from '@angular/forms';
+ 
+@@ -28,7 +26,6 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+         ActionButtonComponent,
+         InputTextComponent,
+         TextTitleComponent,
+-        ToggleSwitch,
+         ReactiveFormsModule
+     ],
+     templateUrl: './new-transaction-schema-form.component.html',
+diff --git a/src/app/pages/catalogs/transactional-profiles/new-transactional-profile-form/new-transactional-profile-form.component.ts b/src/app/pages/catalogs/transactional-profiles/new-transactional-profile-form/new-transactional-profile-form.component.ts
+index 8341c68..dfb9ff1 100644
+--- a/src/app/pages/catalogs/transactional-profiles/new-transactional-profile-form/new-transactional-profile-form.component.ts
++++ b/src/app/pages/catalogs/transactional-profiles/new-transactional-profile-form/new-transactional-profile-form.component.ts
+@@ -3,19 +3,14 @@ import { CardContainerComponent } from '@/app/shared/components/card-container/c
+ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/input-text.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+-import { InputRadialComponent } from '@/app/shared/components/input-radial/input-radial.component';
+ import { Component, OnInit } from '@angular/core';
+-import { ToggleSwitch } from 'primeng/toggleswitch';
+ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+ 
+ import {
+   FormArray,
+   FormBuilder,
+-  FormControl,
+   FormGroup,
+   ReactiveFormsModule,
+-  ValidationErrors,
+   Validators
+  } from '@angular/forms';
+ 
+@@ -31,14 +26,10 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+     selector: 'app-new-transactional-profile-form',
+     imports: [
+         SectionTitleComponent,
+-        InputRadialComponent,
+         CardContainerComponent,
+-        TextTypeComponent,
+         ActionButtonComponent,
+-        RouterLink,
+         InputTextComponent,
+         TextTitleComponent,
+-        ToggleSwitch,
+         ReactiveFormsModule,
+         CommonModule
+     ],
+diff --git a/src/app/pages/catalogs/url-target/new-url-target-form/new-url-target-form.component.ts b/src/app/pages/catalogs/url-target/new-url-target-form/new-url-target-form.component.ts
+index 143cb4b..24a9ec7 100644
+--- a/src/app/pages/catalogs/url-target/new-url-target-form/new-url-target-form.component.ts
++++ b/src/app/pages/catalogs/url-target/new-url-target-form/new-url-target-form.component.ts
+@@ -3,16 +3,13 @@ import { CardContainerComponent } from '@/app/shared/components/card-container/c
+ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/input-text.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { Component, OnInit } from '@angular/core';
+-import { ToggleSwitch } from 'primeng/toggleswitch';
+-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
++import { ActivatedRoute, Router } from '@angular/router';
+ 
+ import {
+   FormBuilder,
+   FormGroup,
+   ReactiveFormsModule,
+-  ValidationErrors,
+   Validators
+  } from '@angular/forms';
+ 
+@@ -26,12 +23,9 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+     imports: [
+         SectionTitleComponent,
+         CardContainerComponent,
+-        TextTypeComponent,
+         ActionButtonComponent,
+-        RouterLink,
+         InputTextComponent,
+         TextTitleComponent,
+-        ToggleSwitch,
+         ReactiveFormsModule
+     ],
+     templateUrl: './new-url-target-form.component.html',
+diff --git a/src/app/pages/dashboard/dashboard.component.ts b/src/app/pages/dashboard/dashboard.component.ts
+index ce0c039..fa01150 100644
+--- a/src/app/pages/dashboard/dashboard.component.ts
++++ b/src/app/pages/dashboard/dashboard.component.ts
+@@ -1,7 +1,6 @@
+ import { ChangeDetectorRef, Component, LOCALE_ID, OnInit, Inject } from '@angular/core';
+ import { MovementsDetailService } from '@/app/services/movements/movements-detail/movements-detail.service';
+-import { ActionButtonComponent } from 'src/app/shared/components/action-button/action-button.component';
+-import { CardDounutChartComponent } from 'src/app/shared/components/card-dounut-chart/card-dounut-chart.component';
++import { CardDounutChartComponent } from '@/app/shared/components/card-dounut-chart/card-dounut-chart.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+@@ -12,15 +11,13 @@ import { CommonModule, DatePipe, registerLocaleData } from '@angular/common';
+ import { filter, map, Observable, of } from 'rxjs';
+ import { BarChartComponent } from '@/app/shared/components/bar-chart/bar-chart.component';
+ import { CalendarComponent } from '@/app/shared/components/calendar/calendar.component';
+-import { AnnualCalendarComponent } from '@/app/shared/components/annual-calendar/annual-calendar.component';
+ import { DateRange } from '@/app/shared/interfaces/types-interface';
+ import localeEsMX from '@angular/common/locales/es-MX';
+-import { SpinnerComponent } from '@/app/shared/components/spinner/spinner.component';
+ import { AuthService } from '@/app/services/auth/auth.service';
+ import { SharedService } from '@/app/services/shared/shared.service';
+ import { MerchantsService } from '@/app/services/merchants/merchants.service';
+ import { formatDateRangeToISO } from '@/app/utils/transformedData';
+-import { catchError, finalize, tap } from 'rxjs/operators';
++import { tap } from 'rxjs/operators';
+ import { create, all } from 'mathjs';
+ const math = create(all);
+ 
+@@ -28,7 +25,6 @@ const math = create(all);
+     selector: 'app-dashboard',
+     standalone: true,
+     imports: [
+-        ActionButtonComponent,
+         CardDounutChartComponent,
+         SectionTitleComponent,
+         CardContainerComponent,
+@@ -38,9 +34,7 @@ const math = create(all);
+         DonutChartComponent,
+         CommonModule,
+         BarChartComponent,
+-        CalendarComponent,
+-        AnnualCalendarComponent,
+-        SpinnerComponent
++        CalendarComponent
+     ],
+     templateUrl: './dashboard.component.html',
+     styleUrls: ['./dashboard.component.css'],
+diff --git a/src/app/pages/devices/devices.component.ts b/src/app/pages/devices/devices.component.ts
+index e1e5aa8..47199dd 100644
+--- a/src/app/pages/devices/devices.component.ts
++++ b/src/app/pages/devices/devices.component.ts
+@@ -1,22 +1,17 @@
+ import { DevicesService } from '@/app/services/devices/devices.service';
+ import { SearchService } from '@/app/services/shared/search/search.service';
+-import { BasicTableComponent } from '@/app/shared/components/basic-table/basic-table.component';
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+-import { HeaderTableSearchComponent } from '@/app/shared/components/header-table-search/header-table-search.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+-import { TableFooterComponent } from '@/app/shared/components/table-footer/table-footer.component';
+ import { TableLayoutComponent } from '@/app/shared/components/table-layout/table-layout.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { ShowDevicesDataInterface } from '@/app/shared/interfaces/devices.interface';
+ import { CommonModule } from '@angular/common';
+ import { Component, OnDestroy, OnInit } from '@angular/core';
+-import { SpinnerComponent } from "../../shared/components/spinner/spinner.component";
+ import { catchError, of, Subject, takeUntil, tap } from 'rxjs';
+ 
+ @Component({
+     selector: 'app-devices',
+-    imports: [SectionTitleComponent, CardContainerComponent, BasicTableComponent, TableFooterComponent, HeaderTableSearchComponent, TableLayoutComponent, TextTitleComponent, TextTypeComponent, CommonModule, SpinnerComponent],
++    imports: [SectionTitleComponent, CardContainerComponent, TableLayoutComponent, TextTitleComponent, CommonModule ],
+     templateUrl: './devices.component.html',
+     styleUrl: './devices.component.css'
+ })
+diff --git a/src/app/pages/files/files.component.ts b/src/app/pages/files/files.component.ts
+index 419b0af..d13a2e9 100644
+--- a/src/app/pages/files/files.component.ts
++++ b/src/app/pages/files/files.component.ts
+@@ -1,13 +1,9 @@
+ import { ActionButtonComponent } from '@/app/shared/components/action-button/action-button.component';
+-import { BasicTableComponent } from '@/app/shared/components/basic-table/basic-table.component';
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+-import { HeaderTableSearchComponent } from '@/app/shared/components/header-table-search/header-table-search.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+-import { TableFooterComponent } from '@/app/shared/components/table-footer/table-footer.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+ import { TableLayoutComponent } from '@/app/shared/components/table-layout/table-layout.component';
+-import { ActivatedRoute, Router } from '@angular/router';
++import { ActivatedRoute } from '@angular/router';
+ import { ToastrService } from 'ngx-toastr';
+ import { HttpClient } from '@angular/common/http';
+ import { FilesService } from '@/app/services/files/files.service';
+@@ -22,10 +18,6 @@ import { PrimeIcons } from 'primeng/api';
+     imports: [
+         SectionTitleComponent,
+         CardContainerComponent,
+-        BasicTableComponent,
+-        TableFooterComponent,
+-        HeaderTableSearchComponent,
+-        TextTypeComponent,
+         TableLayoutComponent,
+         CommonModule,
+         ActionButtonComponent
+diff --git a/src/app/pages/generate-password/generate-password.component.ts b/src/app/pages/generate-password/generate-password.component.ts
+index 2b31340..47556a8 100644
+--- a/src/app/pages/generate-password/generate-password.component.ts
++++ b/src/app/pages/generate-password/generate-password.component.ts
+@@ -5,13 +5,13 @@ import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.c
+ import { AuthCreateNewPassResponse } from '@/app/shared/interfaces/auth-reset.interface';
+ import { Component, OnInit } from '@angular/core';
+ import { FormsModule } from '@angular/forms';
+-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
++import { ActivatedRoute, Router } from '@angular/router';
+ import { utils } from '@/app/utils/utils';
+ import { ToastrService } from 'ngx-toastr';
+ 
+ @Component({
+     selector: 'app-generate-password',
+-    imports: [TextTypeComponent, TextTitleComponent, DefaultButtonComponent, FormsModule, RouterLink],
++    imports: [TextTypeComponent, TextTitleComponent, DefaultButtonComponent, FormsModule ],
+     templateUrl: './generate-password.component.html',
+     styleUrl: './generate-password.component.css'
+ })
+diff --git a/src/app/pages/login/login.component.ts b/src/app/pages/login/login.component.ts
+index 95e9db4..2181574 100644
+--- a/src/app/pages/login/login.component.ts
++++ b/src/app/pages/login/login.component.ts
+@@ -1,21 +1,19 @@
+ import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+-import { TextTitleComponent } from 'src/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from 'src/app/shared/components/text-type/text-type.component';
+-import { FooterComponent } from 'src/app/shared/components/footer/footer.component';
+-import { InputFormComponent } from 'src/app/shared/components/input-login-form/input-login-form.component';
+-import { AuthService } from 'src/app/services/auth/auth.service';
+-import { Router, RouterLink } from '@angular/router';
++import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
++import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
++import { AuthService } from '@/app/services/auth/auth.service';
++import { Router } from '@angular/router';
+ import { FormsModule } from '@angular/forms';
+ import { CommonModule } from '@angular/common';
+-import { DefaultButtonComponent } from 'src/app/shared/components/default-button/default-button.component';
+-import { UserInfo } from 'src/app/shared/interfaces/user-info.interface';
+-import { SharedService } from 'src/app/services/shared/shared.service';
++import { DefaultButtonComponent } from '@/app/shared/components/default-button/default-button.component';
++import { UserInfo } from '@/app/shared/interfaces/user-info.interface';
++import { SharedService } from '@/app/services/shared/shared.service';
+ import { utils } from '@/app/utils/utils';
+ import { ToastrService } from 'ngx-toastr';
+ 
+ @Component({
+     selector: 'app-login',
+-    imports: [TextTitleComponent, TextTypeComponent, FooterComponent, InputFormComponent, FormsModule, CommonModule, DefaultButtonComponent, RouterLink],
++    imports: [TextTitleComponent, TextTypeComponent, FormsModule, CommonModule, DefaultButtonComponent ],
+     templateUrl: './login.component.html',
+     styleUrl: './login.component.css'
+ })
+diff --git a/src/app/pages/merchants/merchants.component.ts b/src/app/pages/merchants/merchants.component.ts
+index d5d6b7b..7f2a3c7 100644
+--- a/src/app/pages/merchants/merchants.component.ts
++++ b/src/app/pages/merchants/merchants.component.ts
+@@ -1,23 +1,21 @@
+ import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+-import { MerchantsService } from 'src/app/services/merchants/merchants.service';
+-import { ShowMerchantsInterface } from 'src/app/shared/interfaces/merchants.interface';
++import { MerchantsService } from '@/app/services/merchants/merchants.service';
++import { ShowMerchantsInterface } from '@/app/shared/interfaces/merchants.interface';
+ import { catchError, takeUntil, tap } from 'rxjs/operators';
+-import { CardContainerComponent } from 'src/app/shared/components/card-container/card-container.component';
+-import { ActionButtonComponent } from 'src/app/shared/components/action-button/action-button.component';
++import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
++import { ActivatedRoute, Router } from '@angular/router';
+ import { TableLayoutComponent } from '@/app/shared/components/table-layout/table-layout.component';
+ import { SearchService } from '@/app/services/shared/search/search.service';
+ import { ModalConfirmComponent } from '@/app/shared/components/modal-confirm/modal-confirm.component';
+ import { ToastrService } from 'ngx-toastr';
+ import { FormDataService } from '@/app/services/shared/form-data/form-data.service';
+-import { PageDetailComponent } from "../../shared/components/page-detail/page-detail.component";
+ import { DataMaskerService } from '@/app/services/shared/data-masker/data-masker.service';
+-import { Observable, of, Subject } from 'rxjs';
++import { of, Subject } from 'rxjs';
+ 
+ @Component({
+     selector: 'app-merchants',
+-    imports: [CardContainerComponent, ActionButtonComponent, SectionTitleComponent, RouterLink, TableLayoutComponent, ModalConfirmComponent, PageDetailComponent],
++    imports: [CardContainerComponent, SectionTitleComponent, TableLayoutComponent, ModalConfirmComponent ],
+     templateUrl: './merchants.component.html',
+     styleUrls: ['./merchants.component.css'] // Corregido 'styleUrl' a 'styleUrls'
+ })
+diff --git a/src/app/pages/movements/contracharges/contracharges.component.ts b/src/app/pages/movements/contracharges/contracharges.component.ts
+index 083d275..39d1bf8 100644
+--- a/src/app/pages/movements/contracharges/contracharges.component.ts
++++ b/src/app/pages/movements/contracharges/contracharges.component.ts
+@@ -3,11 +3,8 @@ import { ActionButtonComponent } from '@/app/shared/components/action-button/act
+ import { CalendarComponent } from '@/app/shared/components/calendar/calendar.component';
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+ import { CardDounutChartComponent } from '@/app/shared/components/card-dounut-chart/card-dounut-chart.component';
+-import { ModalConfirmComponent } from '@/app/shared/components/modal-confirm/modal-confirm.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TableLayoutComponent } from '@/app/shared/components/table-layout/table-layout.component';
+-import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { DateRange } from '@/app/shared/interfaces/types-interface';
+ import { formatDateRangeToISO } from '@/app/utils/transformedData';
+ import { CommonModule } from '@angular/common';
+@@ -20,7 +17,7 @@ import * as XLSX from 'xlsx';
+ 
+ @Component({
+     selector: 'app-contracharges',
+-    imports: [CommonModule, CalendarComponent, TableLayoutComponent, ModalConfirmComponent, CardContainerComponent, SectionTitleComponent, TextTypeComponent, TextTitleComponent, ActionButtonComponent, CardDounutChartComponent
++    imports: [CommonModule, CalendarComponent, TableLayoutComponent, CardContainerComponent, SectionTitleComponent, ActionButtonComponent, CardDounutChartComponent
+     ],
+     templateUrl: './contracharges.component.html',
+     styleUrl: './contracharges.component.css'
+diff --git a/src/app/pages/movements/pos-json/pos-json.component.ts b/src/app/pages/movements/pos-json/pos-json.component.ts
+index 3c5972e..bd162d6 100644
+--- a/src/app/pages/movements/pos-json/pos-json.component.ts
++++ b/src/app/pages/movements/pos-json/pos-json.component.ts
+@@ -2,7 +2,6 @@ import { PosjsonService } from '@/app/services/movements/posjson/posjson.service
+ import { SearchService } from '@/app/services/shared/search/search.service';
+ import { CalendarComponent } from '@/app/shared/components/calendar/calendar.component';
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+-import { ModalConfirmComponent } from '@/app/shared/components/modal-confirm/modal-confirm.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TableLayoutComponent } from '@/app/shared/components/table-layout/table-layout.component';
+ import { CommonModule } from '@angular/common';
+@@ -22,7 +21,6 @@ interface DateRange {
+     imports: [
+         CalendarComponent,
+         TableLayoutComponent,
+-        ModalConfirmComponent,
+         CardContainerComponent,
+         CommonModule,
+         SectionTitleComponent,
+diff --git a/src/app/pages/movements/transactions copy/transactions.component.ts b/src/app/pages/movements/transactions copy/transactions.component.ts
+index b3b92b1..e6d3e5b 100644
+--- a/src/app/pages/movements/transactions copy/transactions.component.ts	
++++ b/src/app/pages/movements/transactions copy/transactions.component.ts	
+@@ -7,7 +7,7 @@ import { SectionTitleComponent } from '@/app/shared/components/section-title/sec
+ import { TableFooterComponent } from '@/app/shared/components/table-footer/table-footer.component';
+ import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { Component } from '@angular/core';
+-import { TextTitleComponent } from 'src/app/shared/components/text-title/text-title.component';
++import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ 
+ @Component({
+     selector: 'app-transactions',
+diff --git a/src/app/pages/movements/transactions/transactions.component.ts b/src/app/pages/movements/transactions/transactions.component.ts
+index e677b97..2df2f9e 100644
+--- a/src/app/pages/movements/transactions/transactions.component.ts
++++ b/src/app/pages/movements/transactions/transactions.component.ts
+@@ -4,7 +4,7 @@ import { CalendarComponent } from '@/app/shared/components/calendar/calendar.com
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TableLayoutComponent } from '@/app/shared/components/table-layout/table-layout.component';
+-import { CardDounutChartComponent } from 'src/app/shared/components/card-dounut-chart/card-dounut-chart.component';
++import { CardDounutChartComponent } from '@/app/shared/components/card-dounut-chart/card-dounut-chart.component';
+ import { DateRange } from '@/app/shared/interfaces/types-interface';
+ import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+ import { ToastrService } from 'ngx-toastr';
+diff --git a/src/app/pages/msi/merchant-msi-config/merchant-msi-config.component.ts b/src/app/pages/msi/merchant-msi-config/merchant-msi-config.component.ts
+index bd2b74d..836be17 100644
+--- a/src/app/pages/msi/merchant-msi-config/merchant-msi-config.component.ts
++++ b/src/app/pages/msi/merchant-msi-config/merchant-msi-config.component.ts
+@@ -1,3 +1,4 @@
++import { CommonModule } from "@angular/common";
+ import { Component, OnInit, OnDestroy } from '@angular/core';
+ import { ActivatedRoute, Router } from '@angular/router';
+ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+@@ -18,7 +19,6 @@ import { MatChipsModule } from '@angular/material/chips';
+ import { MatTooltipModule } from '@angular/material/tooltip';
+ import {
+   MsiConfig,
+-  MsiUpdate,
+   ComponentMsiConfig,
+   MsiPlan,
+   MsiValidationResult
+@@ -31,6 +31,7 @@ import { takeUntil } from 'rxjs/operators';
+   standalone: true,
+   imports: [
+     FormsModule,
++    CommonModule,
+     ReactiveFormsModule,
+     MatSlideToggleModule,
+     MatFormFieldModule,
+@@ -88,21 +89,21 @@ import { takeUntil } from 'rxjs/operators';
+                 <mat-card-content>
+                   <div class="status-grid">
+                     <div class="status-item">
+-                      <mat-slide-toggle [ngModel]="msiConfig?.enabled" (ngModelChange)="onEnabledChange($event)">
++                      <mat-slide-toggle [ngModel]="msiConfig.enabled" (ngModelChange)="onEnabledChange($event)">
+                         MSI Habilitado
+                       </mat-slide-toggle>
+                       <p class="status-description">Activar MSI para este comercio</p>
+                     </div>
+ 
+                     <div class="status-item">
+-                      <mat-slide-toggle [ngModel]="msiConfig?.national_only" disabled>
++                      <mat-slide-toggle [ngModel]="msiConfig.national_only" disabled>
+                         Solo Tarjetas Nacionales
+                       </mat-slide-toggle>
+                       <p class="status-description">Restringir a tarjetas mexicanas</p>
+                     </div>
+ 
+                     <div class="status-item">
+-                      <mat-slide-toggle [ngModel]="msiConfig?.token_q6_supported" disabled>
++                      <mat-slide-toggle [ngModel]="msiConfig.token_q6_supported" disabled>
+                         Token Q6 Soportado
+                       </mat-slide-toggle>
+                       <p class="status-description">Soporte para Token Q6</p>
+@@ -121,17 +122,17 @@ import { takeUntil } from 'rxjs/operators';
+                   <form [formGroup]="msiForm" class="msi-form">
+                     <div class="plans-grid">
+                       <div *ngFor="let plan of msiPlans; let i = index" class="plan-card"
+-                           [class.disabled]="!plan.enabled || !msiConfig?.enabled">
++                           [class.disabled]="!plan.enabled || !msiConfig.enabled">
+                         <div class="plan-header">
+                           <mat-slide-toggle
+                             [(ngModel)]="plan.enabled"
+                             (change)="onPlanChange(i)"
+-                            [disabled]="!msiConfig?.enabled">
++                            [disabled]="!msiConfig.enabled">
+                             {{ plan.months }} Meses
+                           </mat-slide-toggle>
+                           <div class="plan-status">
+-                            <mat-icon [color]="plan.enabled && msiConfig?.enabled ? 'primary' : 'disabled'">
+-                              {{ plan.enabled && msiConfig?.enabled ? 'check_circle' : 'remove_circle' }}
++                            <mat-icon [color]="plan.enabled && msiConfig.enabled ? 'primary' : 'disabled'">
++                              {{ plan.enabled && msiConfig.enabled ? 'check_circle' : 'remove_circle' }}
+                             </mat-icon>
+                           </div>
+                         </div>
+@@ -141,7 +142,7 @@ import { takeUntil } from 'rxjs/operators';
+                             <input matInput
+                                    type="number"
+                                    [formControlName]="'amount_' + plan.months"
+-                                   [disabled]="!plan.enabled || !msiConfig?.enabled"
++                                   [disabled]="!plan.enabled || !msiConfig.enabled"
+                                    placeholder="0.00">
+                             <span matPrefix>$</span>
+                             <mat-hint>Monto mínimo para este plan</mat-hint>
+@@ -166,7 +167,7 @@ import { takeUntil } from 'rxjs/operators';
+                         [checked]="operation.msi_enabled"
+                         disabled="true"
+                         color="primary">
+-                        {{ operation.name_operation }}
++                        {{ operation.name }}
+                       </mat-checkbox>
+                       <div class="operation-details">
+                         <span class="operation-id">ID: {{ operation.id_operation }}</span>
+@@ -216,24 +217,24 @@ import { takeUntil } from 'rxjs/operators';
+                   </form>
+ 
+                   <div *ngIf="validationResult" class="validation-result"
+-                       [class.eligible]="validationResult?.is_msi_eligible"
+-                       [class.not-eligible]="!validationResult?.is_msi_eligible">
++                       [class.eligible]="validationResult.is_msi_eligible"
++                       [class.not-eligible]="!validationResult.is_msi_eligible">
+                     <div class="result-header">
+-                      <mat-icon [color]="validationResult?.is_msi_eligible ? 'primary' : 'warn'">
+-                        {{ validationResult?.is_msi_eligible ? 'check_circle' : 'cancel' }}
++                      <mat-icon [color]="validationResult.is_msi_eligible ? 'primary' : 'warn'">
++                        {{ validationResult.is_msi_eligible ? 'check_circle' : 'cancel' }}
+                       </mat-icon>
+                       <span class="result-title">
+-                        {{ validationResult?.is_msi_eligible ? 'BIN Elegible para MSI' : 'BIN No Elegible para MSI' }}
++                        {{ validationResult.is_msi_eligible ? 'BIN Elegible para MSI' : 'BIN No Elegible para MSI' }}
+                       </span>
+                     </div>
+-                    <div class="result-details" *ngIf="validationResult?.bin_info">
+-                      <p><strong>Marca:</strong> {{ validationResult?.bin_info?.brand }}</p>
+-                      <p><strong>Rango:</strong> {{ validationResult?.bin_info?.range }}</p>
+-                      <p *ngIf="validationResult?.bin_info?.bank_name"><strong>Banco:</strong> {{ validationResult?.bin_info?.bank_name }}</p>
++                    <div class="result-details" *ngIf="validationResult.bin_info">
++                      <p><strong>Marca:</strong> {{ validationResult.bin_info.brand }}</p>
++                      <p><strong>Rango:</strong> {{ validationResult.bin_info.range }}</p>
++                      <p *ngIf="validationResult.bin_info.bank_name"><strong>Banco:</strong> {{ validationResult.bin_info.bank_name }}</p>
+                     </div>
+-                    <div class="result-error" *ngIf="validationResult?.error">
++                    <div class="result-error" *ngIf="validationResult.error">
+                       <mat-icon color="warn">error</mat-icon>
+-                      <span>{{ validationResult?.error }}</span>
++                      <span>{{ validationResult.error }}</span>
+                     </div>
+                   </div>
+                 </mat-card-content>
+diff --git a/src/app/pages/payment-links/list-payment-link/list-payment-link.component.ts b/src/app/pages/payment-links/list-payment-link/list-payment-link.component.ts
+index fca6e4a..5bca899 100644
+--- a/src/app/pages/payment-links/list-payment-link/list-payment-link.component.ts
++++ b/src/app/pages/payment-links/list-payment-link/list-payment-link.component.ts
+@@ -3,11 +3,8 @@ import { LinkService } from '@/app/services/links/link.service';
+ import { SearchService } from '@/app/services/shared/search/search.service';
+ import { CalendarComponent } from '@/app/shared/components/calendar/calendar.component';
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+-import { ModalConfirmComponent } from '@/app/shared/components/modal-confirm/modal-confirm.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TableLayoutComponent } from '@/app/shared/components/table-layout/table-layout.component';
+-import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { CustomTableAction, DateRange } from '@/app/shared/interfaces/types-interface';
+ import { Component, OnDestroy, OnInit } from '@angular/core';
+ import { ToastrService } from 'ngx-toastr';
+@@ -21,10 +18,7 @@ import { ActionButtonComponent } from "../../../shared/components/action-button/
+     imports: [
+         CalendarComponent,
+         TableLayoutComponent,
+-        ModalConfirmComponent,
+         CardContainerComponent,
+-        TextTitleComponent,
+-        TextTypeComponent,
+         SectionTitleComponent,
+         ActionButtonComponent
+     ],
+diff --git a/src/app/pages/payment-links/make-payment-form/make-payment-form.component.ts b/src/app/pages/payment-links/make-payment-form/make-payment-form.component.ts
+index d906dc0..da0e0d2 100644
+--- a/src/app/pages/payment-links/make-payment-form/make-payment-form.component.ts
++++ b/src/app/pages/payment-links/make-payment-form/make-payment-form.component.ts
+@@ -1,13 +1,10 @@
+ import { Component } from '@angular/core';
+-import { TextTitleComponent } from 'src/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from 'src/app/shared/components/text-type/text-type.component';
+-import { FooterComponent } from 'src/app/shared/components/footer/footer.component';
+-import { InputFormComponent } from 'src/app/shared/components/input-login-form/input-login-form.component';
++import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
++import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/input-text.component';
+ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+ import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+ import { CommonModule, Location } from '@angular/common';
+-import { DefaultButtonComponent } from 'src/app/shared/components/default-button/default-button.component';
+ import { ToastrService } from 'ngx-toastr';
+ import { LinkService } from '@/app/services/links/link.service';
+ import { CountriesService } from '@/app/services/shared/countries-service/countries.service';
+@@ -18,9 +15,7 @@ import {
+   LinkValidationInterface,
+   PaymentInformationInterface,
+   PaymentResponse3DSInterface,
+-  PaymentResponseInterface,
+   VerifyPaymentInformationInterface,
+-  SeliaPaymentResponseInterface,
+   SeliaPaymentInformationInterface,
+   AnyPaymentResponse
+ } from '@/app/shared/interfaces/payment-links.interface';
+@@ -35,13 +30,10 @@ import { ToggleSwitchComponent } from '@/app/shared/components/inputs/input-swit
+     TextTitleComponent,
+     InputTextComponent,
+     TextTypeComponent,
+-    FooterComponent,
+-    InputFormComponent,
+     InputSelectComponent,
+     FormsModule,
+     CommonModule,
+     ReactiveFormsModule,
+-    DefaultButtonComponent,
+     RouterLink,
+     StepLabelComponent,
+     ToggleSwitchComponent,
+diff --git a/src/app/pages/payment-links/new-payment-link/new-payment-link.component.ts b/src/app/pages/payment-links/new-payment-link/new-payment-link.component.ts
+index 02ec0a3..6b2cfd1 100644
+--- a/src/app/pages/payment-links/new-payment-link/new-payment-link.component.ts
++++ b/src/app/pages/payment-links/new-payment-link/new-payment-link.component.ts
+@@ -1,15 +1,12 @@
+-import { ActionButtonComponent } from '@/app/shared/components/action-button/action-button.component';
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { Component } from '@angular/core';
+-import { RouterLink } from '@angular/router';
+-import { Action } from 'rxjs/internal/scheduler/Action';
+ 
+ @Component({
+     selector: 'app-new-payment-link',
+-    imports: [RouterLink, CardContainerComponent, TextTitleComponent, TextTypeComponent, SectionTitleComponent, ActionButtonComponent],
++    imports: [ CardContainerComponent, TextTitleComponent, TextTypeComponent, SectionTitleComponent ],
+     templateUrl: './new-payment-link.component.html',
+     styleUrl: './new-payment-link.component.css'
+ })
+diff --git a/src/app/pages/payment-links/payment-links.component.ts b/src/app/pages/payment-links/payment-links.component.ts
+index a7083ee..8ac4ceb 100644
+--- a/src/app/pages/payment-links/payment-links.component.ts
++++ b/src/app/pages/payment-links/payment-links.component.ts
+@@ -1,4 +1,3 @@
+-import { MerchantsService } from '@/app/services/merchants/merchants.service';
+ import { ActionButtonComponent } from '@/app/shared/components/action-button/action-button.component';
+ import { BasicTableComponent } from '@/app/shared/components/basic-table/basic-table.component';
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+@@ -6,22 +5,19 @@ import { InputSelectComponent } from '@/app/shared/components/inputs/input-selec
+ import { InputTextComponent } from '@/app/shared/components//inputs/input-text/input-text.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+-import { TableLayoutComponent } from '@/app/shared/components/table-layout/table-layout.component';
+ import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+ import { Component, OnInit } from '@angular/core';
+ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+-import { RouterLink, Router } from '@angular/router';
++import { Router } from '@angular/router';
+ import { PrimeIcons } from 'primeng/api';
+-import { QrCodeModule } from 'ng-qrcode';
++import { QrCodeComponent  } from 'ng-qrcode';
+ 
+ import { ToastrService } from 'ngx-toastr';
+-import { takeLast, tap } from 'rxjs';
+-import { TextTitleComponent } from 'src/app/shared/components/text-title/text-title.component';
++import { tap } from 'rxjs';
++import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { LinkService } from '@/app/services/links/link.service';
+ import { CustomTableAction } from '@/app/shared/interfaces/types-interface';
+ import { SubmitTypeInterface } from '@/app/shared/interfaces/submit-type';
+-import { ToggleSwitchComponent } from "../../shared/components/inputs/input-switch/input-switch.component";
+-import {MerchantsInterface} from "@/app/shared/interfaces/merchants.interface";
+ 
+ /**
+  * Payment Links Management Component
+@@ -44,7 +40,6 @@ import {MerchantsInterface} from "@/app/shared/interfaces/merchants.interface";
+   selector: 'app-payment-links',
+   imports: [
+     SectionTitleComponent,
+-    TableLayoutComponent,
+     CardContainerComponent,
+     TextTitleComponent,
+     TextTypeComponent,
+@@ -54,11 +49,9 @@ import {MerchantsInterface} from "@/app/shared/interfaces/merchants.interface";
+     InputSelectComponent,
+     ReactiveFormsModule,
+     CommonModule,
+-    RouterLink,
+     ReactiveFormsModule,
+-    QrCodeModule,
++    QrCodeComponent,
+     CommonModule,
+-    ToggleSwitchComponent
+   ],
+   templateUrl: './payment-links.component.html',
+   styleUrl: './payment-links.component.css'
+diff --git a/src/app/pages/reports/dispertion/dispertion.component.ts b/src/app/pages/reports/dispertion/dispertion.component.ts
+index e7c95d7..9d9307d 100644
+--- a/src/app/pages/reports/dispertion/dispertion.component.ts
++++ b/src/app/pages/reports/dispertion/dispertion.component.ts
+@@ -1,7 +1,7 @@
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+-import { TextTitleComponent } from 'src/app/shared/components/text-title/text-title.component';
++import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { InputSelectComponent } from '@/app/shared/components/inputs/input-select/input-select.component';
+ 
+ import { Component, OnInit } from '@angular/core';
+diff --git a/src/app/pages/reports/statement-account/statement-account.component.ts b/src/app/pages/reports/statement-account/statement-account.component.ts
+index 59fecb5..6f73157 100644
+--- a/src/app/pages/reports/statement-account/statement-account.component.ts
++++ b/src/app/pages/reports/statement-account/statement-account.component.ts
+@@ -1,7 +1,7 @@
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+-import { TextTitleComponent } from 'src/app/shared/components/text-title/text-title.component';
++import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+ import { InputSelectComponent } from '@/app/shared/components/inputs/input-select/input-select.component';
+ 
+ import { Component, OnInit } from '@angular/core';
+diff --git a/src/app/pages/security/profiles/new-profile-form/new-profile-form.component.ts b/src/app/pages/security/profiles/new-profile-form/new-profile-form.component.ts
+index bb55267..74da334 100644
+--- a/src/app/pages/security/profiles/new-profile-form/new-profile-form.component.ts
++++ b/src/app/pages/security/profiles/new-profile-form/new-profile-form.component.ts
+@@ -3,14 +3,12 @@ import { CardContainerComponent } from '@/app/shared/components/card-container/c
+ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/input-text.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { CommonModule } from '@angular/common';
+ import { Component, OnDestroy, OnInit } from '@angular/core';
+-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
++import { ActivatedRoute, Router } from '@angular/router';
+ import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, AbstractControl, Validators } from '@angular/forms';
+ import { ProfilesService } from '@/app/services/security/profiles/profiles.service';
+ import { ToastrService } from 'ngx-toastr';
+-import { InputRadialComponent } from "../../../../shared/components/input-radial/input-radial.component";
+ import { catchError, map, mergeMap, Observable, of, Subject, takeUntil, tap } from 'rxjs';
+ import { ToggleSwitchComponent } from "../../../../shared/components/inputs/input-switch/input-switch.component";
+ 
+@@ -62,14 +60,11 @@ interface SendProfile {
+     imports: [
+         SectionTitleComponent,
+         CardContainerComponent,
+-        TextTypeComponent,
+         CommonModule,
+         ActionButtonComponent,
+         InputTextComponent,
+         TextTitleComponent,
+-        RouterLink,
+         ReactiveFormsModule,
+-        InputRadialComponent,
+         ToggleSwitchComponent
+     ],
+     templateUrl: './new-profile-form.component.html',
+diff --git a/src/app/pages/security/users-tdm/new-user-tdm-form/new-user-tdm-form.component.ts b/src/app/pages/security/users-tdm/new-user-tdm-form/new-user-tdm-form.component.ts
+index 0397a46..975056b 100644
+--- a/src/app/pages/security/users-tdm/new-user-tdm-form/new-user-tdm-form.component.ts
++++ b/src/app/pages/security/users-tdm/new-user-tdm-form/new-user-tdm-form.component.ts
+@@ -4,12 +4,10 @@ import { CardContainerComponent } from '@/app/shared/components/card-container/c
+ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/input-text.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { DataUsersTDMServiceInterface } from '@/app/shared/interfaces/users-tdm-service.interface';
+ import { Component, OnDestroy, OnInit } from '@angular/core';
+ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+-import { ToggleSwitch } from 'primeng/toggleswitch';
++import { ActivatedRoute, Router } from '@angular/router';
+ import { FormDataService } from '@/app/services/shared/form-data/form-data.service';
+ import { ToastrService } from 'ngx-toastr';
+ import { ToggleSwitchComponent } from "@/app/shared/components/inputs/input-switch/input-switch.component";
+@@ -19,7 +17,7 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+ 
+ @Component({
+     selector: 'app-new-user-tdm-form',
+-    imports: [SectionTitleComponent, CardContainerComponent, TextTypeComponent, ActionButtonComponent, RouterLink, InputTextComponent, TextTitleComponent, ToggleSwitch, ReactiveFormsModule, ToggleSwitchComponent],
++    imports: [SectionTitleComponent, CardContainerComponent, ActionButtonComponent, InputTextComponent, TextTitleComponent, ReactiveFormsModule, ToggleSwitchComponent],
+     templateUrl: './new-user-tdm-form.component.html',
+     styleUrl: './new-user-tdm-form.component.css'
+ })
+diff --git a/src/app/pages/security/users-tdm/users-tdm.component.ts b/src/app/pages/security/users-tdm/users-tdm.component.ts
+index 911f875..bfb4e1b 100644
+--- a/src/app/pages/security/users-tdm/users-tdm.component.ts
++++ b/src/app/pages/security/users-tdm/users-tdm.component.ts
+@@ -2,8 +2,6 @@ import { UsersTDMService } from '@/app/services/security/usersTDM/users-tdm.serv
+ import { FormDataService } from '@/app/services/shared/form-data/form-data.service';
+ import { SearchService } from '@/app/services/shared/search/search.service';
+ import { CardContainerComponent } from '@/app/shared/components/card-container/card-container.component';
+-import { FloatButtonComponent } from '@/app/shared/components/float-button/float-button.component';
+-import { InputTextComponent } from '@/app/shared/components/input-text/input-text.component';
+ import { ModalConfirmComponent } from '@/app/shared/components/modal-confirm/modal-confirm.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TableLayoutComponent } from '@/app/shared/components/table-layout/table-layout.component';
+@@ -11,11 +9,11 @@ import { ShowTDMDataInterface } from '@/app/shared/interfaces/users-tdm-service.
+ import { transformedDate } from '@/app/utils/transformedData';
+ import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+ import { ActivatedRoute, Router } from '@angular/router';
+-import { map, Subject, takeUntil, tap } from 'rxjs';
++import { Subject, takeUntil, tap } from 'rxjs';
+ 
+ @Component({
+     selector: 'app-users-tdm',
+-    imports: [SectionTitleComponent, CardContainerComponent, TableLayoutComponent, FloatButtonComponent, ModalConfirmComponent, InputTextComponent],
++    imports: [SectionTitleComponent, CardContainerComponent, TableLayoutComponent, ModalConfirmComponent ],
+     templateUrl: './users-tdm.component.html',
+     styleUrl: './users-tdm.component.css'
+ })
+diff --git a/src/app/pages/security/users/new-user-form/new-user-form.component.ts b/src/app/pages/security/users/new-user-form/new-user-form.component.ts
+index 7f50554..2274efb 100644
+--- a/src/app/pages/security/users/new-user-form/new-user-form.component.ts
++++ b/src/app/pages/security/users/new-user-form/new-user-form.component.ts
+@@ -7,12 +7,11 @@ import { InputTextComponent } from '@/app/shared/components/inputs/input-text/in
+ import { InputSelectComponent } from '@/app/shared/components/inputs/input-select/input-select.component';
+ import { SectionTitleComponent } from '@/app/shared/components/section-title/section-title.component';
+ import { TextTitleComponent } from '@/app/shared/components/text-title/text-title.component';
+-import { TextTypeComponent } from '@/app/shared/components/text-type/text-type.component';
+ import { SubmitTypeInterface } from '@/app/shared/interfaces/submit-type';
+ import { utils } from '@/app/utils/utils';
+ import { Component, OnDestroy, OnInit } from '@angular/core';
+ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
++import { ActivatedRoute, Router } from '@angular/router';
+ import { ToastrService } from 'ngx-toastr';
+ import { map, Subject, takeUntil, tap } from 'rxjs';
+ import { CommonModule } from '@angular/common';
+@@ -22,7 +21,7 @@ import { FormTrimService } from '@/app/services/shared/form-trim/form-trim.servi
+ 
+ @Component({
+     selector: 'app-new-user-form',
+-    imports: [CommonModule, SectionTitleComponent, CardContainerComponent, InputTextComponent, TextTypeComponent, ActionButtonComponent, InputSelectComponent, RouterLink, TextTitleComponent, ReactiveFormsModule],
++    imports: [CommonModule, SectionTitleComponent, CardContainerComponent, InputTextComponent, ActionButtonComponent, InputSelectComponent, TextTitleComponent, ReactiveFormsModule],
+     templateUrl: './new-user-form.component.html',
+     styleUrl: './new-user-form.component.css'
+ })
+diff --git a/src/app/services/about/about.service.ts b/src/app/services/about/about.service.ts
+index 5eeb496..8596941 100644
+--- a/src/app/services/about/about.service.ts
++++ b/src/app/services/about/about.service.ts
+@@ -1,5 +1,5 @@
+ import { Injectable } from '@angular/core';
+-import { endpoints } from 'src/app/config/config';
++import { endpoints } from '@/app/config/config';
+ import { utils } from '@/app/utils/utils';
+ import { catchError, Observable, throwError } from 'rxjs';
+ import { GetInfoResponse } from '@/app/shared/interfaces/about-interface';
+diff --git a/src/app/services/auth/auth.service.ts b/src/app/services/auth/auth.service.ts
+index 21770d1..ff890e3 100644
+--- a/src/app/services/auth/auth.service.ts
++++ b/src/app/services/auth/auth.service.ts
+@@ -3,9 +3,9 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+ import { Router } from '@angular/router';
+ import { Observable, throwError } from 'rxjs';
+ import { catchError, tap } from 'rxjs/operators';
+-import { UserInfo } from 'src/app/shared/interfaces/user-info.interface';
+-import { LoginResponseInterface } from 'src/app/shared/interfaces/login-response.interface';
+-import { endpoints } from 'src/app/config/config';
++import { UserInfo } from '@/app/shared/interfaces/user-info.interface';
++import { LoginResponseInterface } from '@/app/shared/interfaces/login-response.interface';
++import { endpoints } from '@/app/config/config';
+ import { utils } from '@/app/utils/utils';
+ 
+ @Injectable({
+diff --git a/src/app/services/merchants/merchants.service.ts b/src/app/services/merchants/merchants.service.ts
+index 3cbd9fc..517015e 100644
+--- a/src/app/services/merchants/merchants.service.ts
++++ b/src/app/services/merchants/merchants.service.ts
+@@ -1,8 +1,8 @@
+-import { endpoints } from 'src/app/config/endpoints.config';
+-import { utils } from 'src/app/utils/utils';
++import { endpoints } from '@/app/config/endpoints.config';
++import { utils } from '@/app/utils/utils';
+ import { HttpClient } from '@angular/common/http';
+ import { Injectable } from '@angular/core';
+-import { MerchantsInterface, ShowMerchantsInterface} from 'src/app/shared/interfaces/merchants.interface';
++import { MerchantsInterface, ShowMerchantsInterface} from '@/app/shared/interfaces/merchants.interface';
+ import { catchError, Observable, throwError, map, tap, BehaviorSubject } from 'rxjs';
+ 
+ 
+diff --git a/src/app/services/shared/shared.service.ts b/src/app/services/shared/shared.service.ts
+index 2c0cd7a..b2fd682 100644
+--- a/src/app/services/shared/shared.service.ts
++++ b/src/app/services/shared/shared.service.ts
+@@ -1,4 +1,4 @@
+-import { UserInfo } from 'src/app/shared/interfaces/user-info.interface';
++import { UserInfo } from '@/app/shared/interfaces/user-info.interface';
+ import { Injectable } from '@angular/core';
+ import { BehaviorSubject } from 'rxjs';
+ import { AuthService } from '../auth/auth.service';
+diff --git a/src/app/shared/components/header/header.component.ts b/src/app/shared/components/header/header.component.ts
+index 027bbb8..dfacc77 100644
+--- a/src/app/shared/components/header/header.component.ts
++++ b/src/app/shared/components/header/header.component.ts
+@@ -4,7 +4,7 @@ import { HeaderLogoComponent } from '../header-logo/header-logo.component';
+ import { CommonModule } from '@angular/common';
+ import { UserInfo } from '../../interfaces/user-info.interface';
+ import { Subscription } from 'rxjs';
+-import { SharedService } from 'src/app/services/shared/shared.service';
++import { SharedService } from '@/app/services/shared/shared.service';
+ import { HeaderGreetingComponent } from '../header-greeting/header-greeting.component';
+ import { AuthMeService } from '@/app/services/auth/auth-me/auth-me.service';
+ 
+diff --git a/src/app/shared/components/singout/singout.component.ts b/src/app/shared/components/singout/singout.component.ts
+index cc60177..44e8f92 100644
+--- a/src/app/shared/components/singout/singout.component.ts
++++ b/src/app/shared/components/singout/singout.component.ts
+@@ -1,4 +1,4 @@
+-import { AuthService } from "src/app/services/auth/auth.service";
++import { AuthService } from "@/app/services/auth/auth.service";
+ import { Component } from '@angular/core';
+ import { SharedService } from "@/app/services/shared/shared.service";
+ 
+-- 
+2.51.0.windows.1
+

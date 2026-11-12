@@ -1,0 +1,16 @@
+<div class="calendar-container">
+  <p-date-picker
+    [(ngModel)]="rangeDates"
+    (onSelect)="onDateSelect()"
+    selectionMode="range"
+    [showIcon]="true"
+    [showButtonBar]="true"
+    [maxDate]="today"
+    [disabled]="disabled"
+    inputId="range-calendar"
+    placeholder="YYYY-MM-DD - YYYY-MM-DD"
+    dateFormat="yy-mm-dd"
+    class="date-picker"
+    aria-label="Select date range"
+  ></p-date-picker>
+</div>

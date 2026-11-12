@@ -1,0 +1,110 @@
+<section-title
+    title="MCC Operations Management"
+    textBtn="New Operation"
+    [linkText]="linkNewRow"
+    [canCreate]="canCreate"
+    >
+</section-title>
+
+<!-- Quick Access to MCC Management -->
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="alert alert-info d-flex align-items-center">
+      <i class="fas fa-lightbulb me-3"></i>
+      <div class="flex-grow-1">
+        <strong>Quick Access:</strong> Need to manage operations by specific MCC?
+        <a routerLink="/catalogos/mcc-operations/management" class="alert-link">
+          Open MCC Operations Management →
+        </a>
+        Select any MCC code to view and manage all its operations in one place.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Category Filter -->
+<div class="category-filter mb-4" *ngIf="categories.length > 0">
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Filter by MCC Category</h5>
+      <div class="d-flex flex-wrap gap-2">
+        <button
+          class="btn btn-outline-primary"
+          [class.active]="!selectedCategory"
+          (click)="clearCategoryFilter()">
+          All Operations
+        </button>
+        <button
+          *ngFor="let category of categories"
+          class="btn btn-outline-primary"
+          [class.active]="selectedCategory?.code === category.code"
+          (click)="selectCategory(category)">
+          {{ category.name }} ({{ category.operations.length }})
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<card-container>
+    <table-layout
+        [dataTable]="operationsData"
+        [actions]="actions"
+        [showActions]="true"
+        [actionsColumnIndex]="11"
+        [filter]="true"
+        (rowSelected)="onTableAction($event)">
+    </table-layout>
+</card-container>
+
+<!-- Status Info -->
+<div class="row mt-4" *ngIf="selectedCategory">
+  <div class="col-12">
+    <div class="alert alert-info">
+      <strong>Filtered by:</strong> {{ selectedCategory.name }} ({{ selectedCategory.code }})
+      <br>
+      <small>{{ selectedCategory.description }}</small>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row mt-4" *ngIf="!loading && operationsData.length > 0">
+  <div class="col-md-3">
+    <div class="card bg-primary text-white">
+      <div class="card-body">
+        <h5 class="card-title">Total Operations</h5>
+        <h3>{{ operationsData.length }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-success text-white">
+      <div class="card-body">
+        <h5 class="card-title">Active</h5>
+        <h3>{{ getActiveCount() }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-warning text-white">
+      <div class="card-body">
+        <h5 class="card-title">Inactive</h5>
+        <h3>{{ getInactiveCount() }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-info text-white">
+      <div class="card-body">
+        <h5 class="card-title">MCC Ranges</h5>
+        <h3>{{ categories.length }}</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<modal-confirm
+  (accept)="handleAccept()"
+  (reject)="handleReject()">
+</modal-confirm>

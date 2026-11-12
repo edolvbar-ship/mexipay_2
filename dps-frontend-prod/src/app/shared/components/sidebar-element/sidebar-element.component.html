@@ -1,0 +1,15 @@
+<div class="flex w-full h-full">
+  <div
+    class="flex h-12 w-full content-center relative"
+    routerLinkActive="bg-light-primary text-primary"
+  >
+    <div
+      class="h-full w-1.5 absolute top-0 left-0"
+      routerLinkActive="bg-gradient-to-br from-primary to-blue"
+    ></div>
+    <div class="flex items-center ml-8">
+      <i [ngClass]="iconPath"></i>
+      <span class="hidden lg:block p-4 text-lg">{{ linkText }}</span>
+    </div>
+  </div>
+</div>

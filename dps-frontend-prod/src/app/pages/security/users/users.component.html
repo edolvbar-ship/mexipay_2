@@ -1,0 +1,17 @@
+<section-title
+    title="Administración de Usuarios"
+    textBtn="Nuevo"
+    [linkText]="linkText"
+    [canCreate]="canCreate">
+</section-title>
+<card-container>
+    <table-layout 
+    [dataTable]="users"
+    [actions]="actions" 
+    [showActions]="true"
+    [filter]="true"/>
+</card-container>
+<modal-confirm
+  (accept)="handleReject()" 
+  (reject)="handleAccept()">
+</modal-confirm>

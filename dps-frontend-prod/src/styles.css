@@ -1,0 +1,43 @@
+/* You can add global styles to this file, and also import other style files */
+@import './colors.css';
+@import './styles/paginator.css';
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;700&display=swap');
+@import 'ngx-toastr/toastr';
+@import "primeicons/primeicons.css";
+
+
+@layer tailwind-base {
+    @tailwind base;
+}
+
+@layer tailwind-utilities {
+    @tailwind components;
+    @tailwind utilities;
+}
+
+@layer primeng;
+
+body {
+    font-family: 'Archivo Narrow', sans-serif !important;
+}
+
+.no-select {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+p-date-picker .p-datepicker-calendar thead {
+  font-weight: 300;
+  color: var(--primary);
+}
+
+p-date-picker .p-ripple.p-highlight {
+  background-color: var(--light-primary);
+  color: var(--primary);
+  border-radius: 50%;
+}
+.p-datepicker-day-view {
+  background-color: lightblue!important;
+}

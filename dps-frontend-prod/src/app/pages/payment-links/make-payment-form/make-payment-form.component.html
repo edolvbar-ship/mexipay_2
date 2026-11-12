@@ -1,0 +1,246 @@
+<section *ngIf="expiredLink" class="flex flex-col my-8 items-center">
+  <text-type class="text-primary font-bold text-lg" text="Link de pago vencido"></text-type>
+  <text-type class="text-lg"
+    text="El link de tu pago ya venció, solicita uno nuevo para continuar la transacción."></text-type>
+  <figure
+    class="flex  flex-col justify-center items-center transition-opacity duration-1000 relative">
+    <img class="h-80" src="../../../../assets/imgs/payment/rejected.png" />
+  </figure>
+
+  <button class="w-1/5 bg-gradient-to-r from-primary to-blue py-2 rounded-3xl text-white text-xl" [routerLink]="'/'">
+    Aceptar
+  </button>
+
+</section>
+
+<section class="px-4 flex flex-col lg:px-[15%]" *ngIf="!isStepperHide">
+
+
+  <!-- top section -->
+  <section class="hidden md:flex w-full items-center">
+    <!-- item step -->
+    <app-step-label step="1" label="Dirección" [status]="steps['1']"></app-step-label>
+
+    <div class="border-y-[1px] border-dashed border-light-gray grow h-[1px]">
+    </div>
+
+    <!-- item step -->
+    <app-step-label step="2" label="Datos de Tarjeta" [status]="steps['2']"></app-step-label>
+
+    <div class="border-y-[1px] border-dashed border-light-gray grow h-[1px]">
+    </div>
+
+    <!-- item step -->
+    <app-step-label step="3" label="Pago" [status]="steps['3']"></app-step-label>
+
+  </section>
+  <!-- end top section -->
+
+  <!-- link information -->
+
+  <section class="space-y-6 mt-4" *ngIf="linkStatus?.data">
+
+    <div class="text-center">
+      <text-type text="Total de pago" variant="secondary" size="medium"></text-type>
+      <span class="text-5xl font-bold">
+        {{linkStatus.data!.monto | currency}}
+      </span>
+      <div class="flex justify-center">
+        <hr class="w-full border-gray">
+      </div>
+    </div>
+
+    <div class="flex-col md:flex-row  flex justify-between" *ngIf="current != 3">
+      <div class="flex justify-center flex-row items-center">
+        <text-type text="Estado" variant="secondary" size="medium" class=""></text-type>
+        <span class="flex items-center gap-2 px-4">
+          <div class="size-2 bg-yellow rounded-full"></div>
+          <text-type [text]="linkStatus.description!" class="font-bold"></text-type>
+        </span>
+      </div>
+      <div class="flex justify-center flex-row items-center">
+        <text-type text="Producto o Servicio" variant="secondary" size="medium"></text-type>
+        <text-type class="px-4" [text]="linkStatus.data!.concepto"></text-type>
+      </div>
+      <div *ngIf="linkStatus.data?.expire_date" class="flex justify-center flex-row items-center">
+        <text-type text="Fecha de Vencimiento" variant="secondary" size="medium"></text-type>
+        <text-type class="px-4" [text]="(linkStatus.data?.expire_date | date: 'dd/MM/YYYY') || ''"></text-type>
+      </div>
+    </div>
+
+  </section>
+  <!-- end link information -->
+
+
+  <!-- form section  -->
+
+  <form (submit)="$event.preventDefault()" action="" [formGroup]="formGroup" [ngClass]="{'mt-4 mb-4':current != 3}"
+    (submit)="onSubmit()">
+
+    <section id="section-one" class="space-y-6" *ngIf="current == 1" formGroupName="1">
+      <div class="instruction-one">
+        <text-type class="text-primary font-bold text-lg" text="Ingresa los datos de dirección"></text-type>
+        <text-type class="text-lg"
+          text="Completa la información de la tarjeta para continuar a pagar el saldo pendiente."></text-type>
+      </div>
+
+
+
+      <div class="grid md:grid-cols-3 gap-6">
+
+        <div class="md:col-span-3">
+
+          <app-input-text maxlength="100" name="street" formControlName="street" label="Calle"></app-input-text>
+
+        </div>
+
+        <div>
+
+          <app-input-text maxlength="5" name="zipCode" formControlName="zipCode" label="Código Postal"
+            allowedPattern="[0-9]"></app-input-text>
+
+        </div>
+
+        <div>
+
+          <app-input-select id="merchant" label="Selecciona un país" formControlName="country"
+            [options]="countriesData">
+          </app-input-select>
+
+        </div>
+
+        <div>
+
+          <app-input-text maxlength="50" name="city" formControlName="city" label="Ciudad"></app-input-text>
+
+        </div>
+
+
+
+      </div>
+
+    </section>
+
+    <section id="section-two" class="space-y-6" *ngIf="current == 2" formGroupName="2">
+      <div>
+        <text-type class="text-primary font-bold text-lg" text="Ingresa los datos de tu tarjeta"></text-type>
+        <text-type class="text-lg"
+          text="Completa la información de la tarjeta para continuar a pagar el saldo pendiente."></text-type>
+      </div>
+
+
+
+      <div class="grid md:grid-cols-2 gap-6">
+
+        <div>
+
+          <app-input-text name="name" formControlName="fullName" label="Nombre Completo" maxlength="150"
+            allowedPattern="[^<>!0-9]"></app-input-text>
+
+        </div>
+
+        <div>
+
+          <app-input-text name="card" formControlName="cardNumber" label="Número de Tarjeta" mask="0000 XXXX XXXX 0000"
+            placeholder="0000 0000 0000 0000"></app-input-text>
+
+        </div>
+
+
+
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+
+        <div>
+
+          <app-input-text name="expire" formControlName="expireDate" label="Vencimiento" mask="00/00" [masked]="true"
+            placeholder="MM / YY"></app-input-text>
+
+        </div>
+
+
+        <div>
+
+          <app-input-text name="cvv" formControlName="cvv" label="CVV" mask="XXX"
+            allowedPattern="[0-9]"></app-input-text>
+
+        </div>
+
+        <app-input-text name="email" formControlName="email" label="Correo Electrónico"
+          maxlength="150"></app-input-text>
+
+
+
+      </div>
+      <div *ngIf="hasPartial && allowedPlans.length > 0">
+        <text-type text="Selecciona opción de meses sin intereses:"
+          class="text-primary font-bold block mb-2"></text-type>
+
+        <div class="flex items-center gap-8 flex-wrap">
+          <div *ngFor="let plan of allowedPlans" class="flex items-center">
+            <app-input-switch formControlName="msi" type="radio" [name]="'msi'" [labelOn]="'right'" [plain]="true"
+              [value]="plan" [label]="plan + ' meses'">
+            </app-input-switch>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <section id="section-three" class="mb-8" *ngIf="current == 3">
+      <figure [ngClass]="{'hidden opacity-0':!!paymentResponse}"
+        class="flex flex-col justify-center items-center transition-opacity duration-1000 relative">
+        <img class="h-80" src="../../../../assets/imgs/payment/processing.png" />
+        <text-title text="Procesando Transacción"></text-title>
+        <text-title [text]="''" size="xsmall"></text-title>
+      </figure>
+
+      <figure [ngClass]="{'hidden opacity-0':(!paymentResponse || paymentResponse.request_status)}"
+        class="flex  flex-col justify-center items-center transition-opacity duration-1000 relative">
+        <img class="h-80" src="../../../../assets/imgs/payment/rejected.png" />
+        <text-title text="Transacción Rechazada"></text-title>
+        <text-title [text]="paymentResponse?.description || ''" size="xsmall"></text-title>
+      </figure>
+
+      <figure [ngClass]="{'hidden opacity-0':(!paymentResponse || !paymentResponse.request_status)}"
+        class="flex flex-col justify-center items-center relative">
+        <img class="h-80" src="../../../../assets/imgs/payment/approved.png" />
+        <text-title text="Transacción Aprobada" variant="secondary"></text-title>
+        <div class="flex-col md:flex-row flex w-full items-center justify-center space-x-4">
+          <span class="flex items-center space-x-2">
+            <text-type text="No. de Autorización: " variant="secondary"></text-type>
+            <text-type [text]="paymentResponse?.authorization || ''"></text-type>
+          </span>
+          <span class="flex items-center space-x-2">
+            <text-type text="No. de Rastreo: " variant="secondary"></text-type>
+            <text-type [text]="paymentResponse?.trace_id || ''"></text-type>
+          </span>
+          <span class="flex items-center space-x-2">
+            <text-type text="No. de Referencia: " variant="secondary"></text-type>
+            <text-type [text]="(paymentResponse?.id || '')+''"></text-type>
+          </span>
+        </div>
+      </figure>
+
+
+
+    </section>
+
+    <section class="flex justify-center col-span-3 mt-6" *ngIf="current != 3">
+      <button class="w-3/5 bg-gradient-to-r from-primary to-blue py-2 rounded-3xl text-white text-xl">
+        Continuar
+      </button>
+    </section>
+  </form>
+  <!-- endform section  -->
+</section>
+
+
+
+<section class="flex items-center justify-center space-x-2 grow">
+
+  <img class="h-12" src="../../../../assets/imgs/verification/service-provider-badge.png" />
+  <img class="h-12 w-12" src="../../../../assets/imgs/verification/pcidss-compliant.webp" />
+  <img class="h-6" src="../../../../assets/imgs/verification/instantssl_trust_seal.png" />
+</section>

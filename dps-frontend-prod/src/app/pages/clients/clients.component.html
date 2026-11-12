@@ -1,0 +1,18 @@
+<section-title
+    title="Clientes"
+    textBtn="Nuevo Cliente"
+    subHead=""
+    [linkText]="linkText"
+    [canCreate]="canCreate">
+</section-title>
+<card-container>
+    <table-layout 
+    [dataTable]="clients"
+    [actions]="actions" 
+    [filter]="true"
+    />
+</card-container>
+<modal-confirm
+    (accept)="handleReject()" 
+    (reject)="handleAccept()">
+</modal-confirm>

@@ -1,0 +1,12 @@
+:root {
+    --light-primary: 'rgba(12, 71, 114, 0.1)';
+    --primary: #0C4772;
+    --black: #3C3C3B;
+    --blue: #3D6C8E;
+    --light-gray: #CFCFCF;
+    --gray: #9F9F9F;
+    --green: #87F9A4;
+    --red: #FF5F5F;
+    --yellow: #F9E887;
+    --white: #ffffff;
+}

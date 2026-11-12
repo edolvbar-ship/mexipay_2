@@ -1,0 +1,103 @@
+<section-title [title]="profileId ? 'Editar de Perfil' : 'Nuevo Perfil'" textBtn="Regresar" [linkText]="linkText" [canCreate]="true" [icon]="'UNDO'">
+</section-title>
+
+<card-container class="mb-8">
+    <div class="h-5 mb-12">
+        <span class="flex gap-4">
+            <div class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center">
+                <text-title text="1" size="xsmall" variant="tertiary"> </text-title>
+            </div>
+            <text-title [text]="profileId ? 'Editar de Perfil' : 'Creación de Nuevo Perfil'" size="xsmall" variant="secondary">
+            </text-title>
+        </span>
+    </div>
+    <form (submit)="$event.preventDefault()" action="" [formGroup]="form">
+        <div class="flex w-full gap-x-24">
+            <app-input-text class="w-1/3" id="nombre" label="Nombre de perfil" formControlName="profile_name">
+            </app-input-text>
+            <app-input-text class="w-full" id="nombre" label="Comentarios" formControlName="message" [maxlength]="40">
+            </app-input-text>
+            
+        </div>
+        <div class=" mt-4">
+            <app-input-switch label="Datos bancarios" formControlName="banking_information" plain [labelOn]="'right'"></app-input-switch>
+        </div>
+        <div class="flex justify-end">
+            <action-button class="mt-6" text="Guardar" [linkIcon]="'SAVE'"(click)="onSubmit()">
+            </action-button>
+        </div>
+    </form>
+</card-container>
+
+<card-container class="m-10">
+    <div class="h-5 mb-12">
+        <span class="flex gap-4">
+            <div class="size-7 rounded-full bg-gradient-to-br from-primary to-blue flex items-center justify-center">
+                <text-title text="2" size="xsmall" variant="tertiary"> </text-title>
+            </div>
+            <text-title text="Recursos" size="xsmall" variant="secondary">
+            </text-title>
+        </span>
+    </div>
+
+    <form (submit)="$event.preventDefault()" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div formArrayName="profiles">
+            <div *ngFor="let profile of profiles.controls; let i = index" [formGroupName]="i" class=" p-4 bg-white">
+                <div class="flex items-center mb-2">
+                    <input type="checkbox" formControlName="isCrud" class="form-checkbox h-5 w-5 text-primary" />
+                    <label class="text-primary text-lg font-semibold ml-4">{{ profile.get('resource_name')?.value
+                        }}</label>
+                </div>
+
+                <div *ngIf="isCrudActive(profile.get('id')?.value ?? 0)"
+                    class="grid grid-cols-2 md:grid-cols-5 m-4 gap-2">
+                    <div class="flex items-center">
+                        <input type="checkbox" formControlName="canCreate" class="form-checkbox h-4 w-4 text-primary" />
+                        <label class="ml-2">Crear</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" formControlName="canEdit" class="form-checkbox h-4 w-4 text-primary" />
+                        <label class="ml-2">Editar</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" formControlName="canDelete" class="form-checkbox h-4 w-4 text-primary" />
+                        <label class="ml-2">Eliminar</label>
+                    </div>
+                </div>
+
+                <div formArrayName="children" class="grid grid-cols-2 lg:grid-cols-3 m-4 gap-4">
+                    <ng-container *ngFor="let child of getChildren(profile).controls; let j = index"
+                        [formGroupName]="j">
+                        <div class="p-4">
+                            <div class="flex items-center mb-2">
+                                <input type="checkbox" formControlName="isCrud"
+                                    class="form-checkbox h-5 w-5 text-primary" />
+                                <label class="font-medium pl-2">{{ child.get('resource_name')?.value }}</label>
+                            </div>
+
+                            <div *ngIf="isChildCrudActive(profile.get('id')?.value ?? 0, child.get('id')?.value ?? 0)"
+                                class="grid grid-cols-1 md:grid-cols-3 mt-2 items-center">
+                                <div class="flex items-center">
+                                    <input type="checkbox" formControlName="canCreate"
+                                        class="form-checkbox h-4 w-4 text-primary" />
+                                    <label class="ml-2">Crear</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" formControlName="canEdit"
+                                        class="form-checkbox h-4 w-4 text-primary" />
+                                    <label class="ml-2">Editar</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" formControlName="canDelete"
+                                        class="form-checkbox h-4 w-4 text-primary" />
+                                    <label class="ml-2">Eliminar</label>
+                                </div>
+                            </div>
+                        </div>
+                    </ng-container>
+                </div>
+            </div>
+        </div>
+    </form>
+
+</card-container>

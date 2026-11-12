@@ -1,0 +1,11 @@
+<nav *ngIf="totalRecords > 0" class="flex justify-between mt-14 items-center">
+    <table-count-element
+        (selectionChanged)="handleSelectionChange($event)">
+    </table-count-element>
+    <table-paginator
+        [totalRecords]="totalRecords"
+        [rows]="itemsPerPage"
+        (pageChanged)="handlePageSelection($event)"
+        (rowsChanged)="updatedPagination($event)">
+    </table-paginator>
+</nav>

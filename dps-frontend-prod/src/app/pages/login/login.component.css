@@ -1,0 +1,21 @@
+input {
+    autocomplete: off;
+}
+
+input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0px 1000px white inset; /* Cambia "white" por el color de fondo de tu input */
+    box-shadow: 0 0 0px 1000px white inset;
+    -webkit-text-fill-color: black; /* Color del texto dentro del input */
+}
+
+input:-moz-autofill {
+    background-color: white !important; /* Cambia "white" por el color de fondo de tu input */
+    color: black !important; /* Color del texto */
+}
+
+.no-select {
+    user-select: none;
+    -webkit-user-select: none;  /* Para navegadores basados en WebKit */
+    -moz-user-select: none;     /* Para navegadores Firefox */
+    -ms-user-select: none;      /* Para Internet Explorer y Edge */
+  }

@@ -1,0 +1,237 @@
+<div class="enhanced-dashboard-container">
+  <!-- Header with Merchant Info -->
+  <div class="dashboard-header">
+    <div class="header-left">
+      <h1 class="dashboard-title">Panel de Control Mejorado</h1>
+      <p class="dashboard-subtitle">Análisis avanzado de transacciones en tiempo real</p>
+    </div>
+    
+    <!-- Merchant Information Card -->
+    <div class="merchant-info-card" *ngIf="merchantInfo || isLoadingMerchant">
+      <div class="merchant-card-content enhanced">
+        <div class="merchant-icon">
+          <i class="pi pi-building"></i>
+        </div>
+        <div class="merchant-details">
+          <div class="merchant-label">Comercio Actual</div>
+          <div class="merchant-name" *ngIf="!isLoadingMerchant; else loadingMerchant">
+            {{ merchantInfo?.['Nombre Comercio'] || 'Comercio no disponible' }}
+          </div>
+          <ng-template #loadingMerchant>
+            <div class="merchant-loading">
+              <div class="loading-dots"></div>
+            </div>
+          </ng-template>
+        </div>
+        <div class="merchant-stats">
+          <div class="stat-item">
+            <span class="stat-label">Transacciones</span>
+            <span class="stat-value">{{ metrics.totalTransactions | number }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Tasa Aprobación</span>
+            <span class="stat-value">{{ metrics.approvalRate | number:'1.1-1' }}%</span>
+          </div>
+        </div>
+        <div class="merchant-badge" *ngIf="merchantInfo?.['Selia ID']">
+          <span class="badge-text">ID: {{ merchantInfo['Selia ID'] }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Date Presets -->
+  <div class="date-controls-section">
+    <div class="quick-date-presets">
+      <button
+        *ngFor="let preset of quickDatePresets"
+        class="preset-btn"
+        (click)="onQuickDateSelect(preset.label)"
+        [disabled]="isLoading"
+        [class.active]="false">
+        {{ preset.label }}
+      </button>
+    </div>
+    
+    <div class="calendar-section">
+      <enhanced-calendar
+        [(ngModel)]="selectedDateRange"
+        (dateChange)="onDateRangeChange($event)"
+        [disabled]="isLoading">
+      </enhanced-calendar>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="isInitialLoad">
+    <div class="loading-content">
+      <loading-skeleton></loading-skeleton>
+      <p class="loading-text">Cargando dashboard mejorado...</p>
+    </div>
+  </div>
+
+  <!-- Main Dashboard Content -->
+  <div class="dashboard-content" [class.loading]="isLoading">
+    
+    <!-- Quick Stats Row -->
+    <div class="stats-row">
+      <quick-stats
+        [metrics]="metrics"
+        [isLoading]="isLoadingMetrics">
+      </quick-stats>
+    </div>
+
+    <!-- Main Grid Layout -->
+    <div class="dashboard-grid">
+      
+      <!-- Main Chart Section -->
+      <div class="chart-section">
+        <div class="chart-container">
+          <div class="chart-header">
+            <h2 class="chart-title">Evolución de Transacciones</h2>
+            <div class="chart-controls">
+              <button class="chart-control-btn" (click)="loadDashboardData()" [disabled]="isLoading">
+                <i class="pi pi-refresh"></i>
+              </button>
+            </div>
+          </div>
+          <div class="chart-wrapper" #mainChart>
+            <canvas *ngIf="!isLoadingChart; else chartSkeleton"></canvas>
+            <ng-template #chartSkeleton>
+              <loading-skeleton type="chart"></loading-skeleton>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insights Section -->
+      <div class="insights-section">
+        <div class="insights-container" #insightsPanel>
+          <h2 class="insights-title">Insights de Rendimiento</h2>
+          <div class="insights-grid">
+            <insights-card
+              *ngFor="let insight of performanceInsights"
+              [insight]="insight"
+              [isLoading]="isLoadingInsights">
+            </insights-card>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics Cards Section -->
+      <div class="metrics-section">
+        <div class="metrics-grid">
+          <metric-card
+            title="Transacciones Originales (0200)"
+            [value]="metrics.originalTransactions"
+            icon="pi pi-credit-card"
+            color="primary"
+            [isLoading]="isLoadingMetrics">
+          </metric-card>
+          
+          <metric-card
+            title="Reversales (0220/0420)"
+            [value]="metrics.reversalTransactions"
+            icon="pi pi-undo"
+            color="warning"
+            [isLoading]="isLoadingMetrics">
+          </metric-card>
+          
+          <metric-card
+            title="Monto Neto"
+            [value]="metrics.netAmount"
+            prefix="$"
+            icon="pi pi-wallet"
+            color="success"
+            [isLoading]="isLoadingMetrics">
+          </metric-card>
+          
+          <metric-card
+            title="Tasa de Aprobación"
+            [value]="metrics.approvalRate"
+            suffix="%"
+            icon="pi pi-check-circle"
+            color="info"
+            [isLoading]="isLoadingMetrics">
+          </metric-card>
+        </div>
+        
+        <!-- Second row of metrics -->
+        <div class="metrics-grid">
+          <metric-card
+            title="Transacciones Totales (0200)"
+            [value]="metrics.totalTransactions"
+            icon="pi pi-list"
+            color="primary"
+            [isLoading]="isLoadingMetrics">
+          </metric-card>
+          
+          <metric-card
+            title="Monto Total Bruto"
+            [value]="metrics.totalAmount"
+            prefix="$"
+            icon="pi pi-dollar"
+            color="warning"
+            [isLoading]="isLoadingMetrics">
+          </metric-card>
+          
+          <metric-card
+            title="Valor Promedio (0200)"
+            [value]="metrics.avgTransactionValue"
+            prefix="$"
+            icon="pi pi-chart-line"
+            color="info"
+            [isLoading]="isLoadingMetrics">
+          </metric-card>
+          
+          <metric-card
+            title="Hora Pico"
+            [value]="metrics.peakHour"
+            icon="pi pi-clock"
+            color="secondary"
+            [isLoading]="isLoadingMetrics">
+          </metric-card>
+        </div>
+      </div>
+
+      <!-- Real-time Updates -->
+      <div class="realtime-section" *ngIf="realTimeUpdates.length > 0">
+        <div class="realtime-container">
+          <h3 class="realtime-title">
+            <i class="pi pi-spin pi-cog"></i>
+            Actualizaciones en Tiempo Real
+          </h3>
+          <div class="realtime-list">
+            <div 
+              *ngFor="let update of realTimeUpdates" 
+              class="realtime-item"
+              [class.approved]="update.status === 'approved'"
+              [class.rejected]="update.status === 'rejected'">
+              <div class="realtime-icon">
+                <i class="pi" [class]="update.status === 'approved' ? 'pi-check' : 'pi-times'"></i>
+              </div>
+              <div class="realtime-details">
+                <span class="realtime-amount">${{ update.amount | number:'1.2-2' }}</span>
+                <span class="realtime-time">{{ update.timestamp | date:'HH:mm:ss' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="false">
+    <div class="error-content">
+      <i class="pi pi-exclamation-triangle error-icon"></i>
+      <h3 class="error-title">Error al cargar los datos</h3>
+      <p class="error-message">No se pudieron cargar los datos del dashboard. Por favor, inténtelo de nuevo.</p>
+      <button class="retry-btn" (click)="loadDashboardData()">
+        <i class="pi pi-refresh"></i>
+        Reintentar
+      </button>
+    </div>
+  </div>
+</div>

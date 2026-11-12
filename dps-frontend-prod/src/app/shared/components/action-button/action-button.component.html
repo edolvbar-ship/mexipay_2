@@ -1,0 +1,33 @@
+<a [routerLink]="linkText">
+    <button
+        *ngIf="variant === 'primary'; else secondaryButton"
+        type="button"
+        class="flex items-center justify-center bg-primary h-8 rounded-full min-w-32 px-4 text-white gap-2 hover:bg-white hover:text-primary hover:border-primary border-[1px]"
+        >
+        <text-type
+            [text]="text"
+            size="small">
+        </text-type>
+        <i  *ngIf="linkIcon" [ngClass]="iconName"></i>
+        <ng-content class="icon"></ng-content>
+    </button>
+</a>
+
+<ng-template #secondaryButton>
+    <a [routerLink]="linkText">
+        <button
+            class="flex items-center justify-center h-8 rounded-full min-w-32 px-4 font-medium text-[15px] border-[1px] border-light-gray hover:bg-primary hover:text-white active:bg-primary gap-2"
+            type="button"
+            [ngClass]="{
+                'bg-primary text-white': isActive, 
+                'bg-white text-black': !isActive
+            }"
+            >
+            <i *ngIf="linkIcon" [ngClass]="iconName"></i>
+            <text-type
+                [text]="text"
+                size="small">
+            </text-type>
+        </button>
+    </a>
+</ng-template>

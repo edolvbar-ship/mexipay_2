@@ -1,0 +1,90 @@
+<!--
+  Página de Acceso Denegado - Se muestra cuando el usuario no tiene permisos
+
+  Características:
+  - Mensaje claro en español de Acceso Denegado
+  - Redirección automática al dashboard después de 5 segundos
+  - Estilo profesional con icono de advertencia
+  - Opciones de navegación manual
+-->
+<main class="grid min-h-full place-items-center bg-gradient-to-br from-red-50 to-indigo-100 px-6 py-24 sm:py-32 lg:px-8">
+  <div class="text-center max-w-2xl mx-auto">
+    <!-- Icono de Acceso Denegado -->
+    <div class="mx-auto h-16 w-16 text-red-500 animate-pulse">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+      </svg>
+    </div>
+
+    <!-- Estado de Acceso Denegado -->
+    <p class="mt-6 text-base font-semibold text-red-600">403 - Acceso Denegado</p>
+
+    <!-- Mensaje Principal -->
+    <h1 class="mt-4 text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+      ¡No tienes permiso!
+    </h1>
+    <p class="mt-6 text-lg leading-8 text-gray-700">
+      No tienes los permisos necesarios para acceder a esta página.
+    </p>
+
+    <!-- Posibles Razones -->
+    <div class="mt-8 bg-white/80 backdrop-blur rounded-lg p-6 shadow-lg">
+      <h3 class="text-sm font-semibold text-gray-900 mb-4">Posibles razones:</h3>
+      <ul class="text-sm text-gray-600 space-y-2 text-left">
+        <li class="flex items-center">
+          <span class="text-red-500 mr-2">•</span>
+          Privilegios de usuario insuficientes
+        </li>
+        <li class="flex items-center">
+          <span class="text-red-500 mr-2">•</span>
+          La sesión ha expirado
+        </li>
+        <li class="flex items-center">
+          <span class="text-red-500 mr-2">•</span>
+          Se requiere acceso administrativo
+        </li>
+      </ul>
+    </div>
+
+    <!-- Countdown y Redirección -->
+    <div class="mt-8 bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+      <p class="text-sm text-indigo-700">
+        <span class="font-semibold">Redirección automática:</span>
+        Serás redirigido al dashboard en
+        <span class="font-bold text-indigo-900">{{ countdown }} segundos</span>
+      </p>
+      <div class="mt-2">
+        <div class="w-full bg-indigo-200 rounded-full h-2">
+          <div
+            class="bg-indigo-600 h-2 rounded-full transition-all duration-1000 ease-linear"
+            [style.width]="(countdown / 5) * 100 + '%'">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="mt-8 flex items-center justify-center gap-x-4 flex-wrap">
+      <button
+        (click)="goToDashboard()"
+        class="rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors">
+        Ir al Dashboard
+      </button>
+      <button
+        (click)="logout()"
+        class="rounded-md bg-gray-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-colors">
+        Cerrar Sesión
+      </button>
+      <button
+        (click)="goBack()"
+        class="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-colors">
+        Regresar
+      </button>
+    </div>
+
+    <!-- Texto de Ayuda -->
+    <p class="mt-6 text-sm text-gray-500">
+      Si crees que esto es un error, contacta al administrador del sistema.
+    </p>
+  </div>
+</main>

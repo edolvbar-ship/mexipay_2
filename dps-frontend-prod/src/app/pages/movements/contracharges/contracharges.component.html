@@ -1,0 +1,39 @@
+<section-title title="Movimientos - Transacciones"></section-title>
+
+<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-4 ">
+
+    <div *ngIf="!isLoading" class="">
+        <card-dounut-chart [title]="'Total de Transacciones'" [subTitle]="'Total de rango'"
+            [infoChart]="donutInfoChartTxt">
+        </card-dounut-chart>
+    </div>
+    <div class="" *ngIf="!isLoading">
+        <card-dounut-chart  [title]="'Tipo de Tarjeta'" [subTitle]="'Total de rango'"
+        [infoChart]="donutInfoChartCardType">
+        </card-dounut-chart>
+    </div>
+    <div class="" *ngIf="!isLoading">
+        <card-dounut-chart  [title]="'Marca de Tarjeta'" [subTitle]="'Total de rango'"
+        [infoChart]="donutInfoChartAccountType">
+        </card-dounut-chart>
+    </div>
+
+    <div class="justify-end content-center lg:col-span-3 xl:col-span-1">
+        <div class="flex gap-4 justify-end xl:flex-col 2xl:flex-row [@media(min-width:1720px)]:flex-row">
+            <div>
+                <app-calendar [rangeDates]="initialDates" (dateEmitted)="handleDates($event)"></app-calendar>
+            </div>
+            <div>
+                <action-button  [text]="'Exportar'" [linkIcon]="'DOWNLOAD'" (click)="exportToExcel()">
+                </action-button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<card-container>
+    <table-layout 
+        
+        [filter]="true"
+    ></table-layout>
+</card-container>
